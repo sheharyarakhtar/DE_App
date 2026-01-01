@@ -1,0 +1,1113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Excel → PostgreSQL Converter</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0d1117;
+            --bg-secondary: #161b22;
+            --bg-tertiary: #21262d;
+            --border-color: #30363d;
+            --text-primary: #e6edf3;
+            --text-secondary: #8b949e;
+            --text-muted: #6e7681;
+            --accent-green: #3fb950;
+            --accent-green-dim: #238636;
+            --accent-blue: #58a6ff;
+            --accent-purple: #a371f7;
+            --accent-orange: #d29922;
+            --accent-red: #f85149;
+            --accent-cyan: #39c5cf;
+            --gradient-start: #1a1f35;
+            --gradient-end: #0d1117;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, var(--gradient-start) 0%, var(--gradient-end) 100%);
+            min-height: 100vh;
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 3rem;
+            padding: 2rem 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+            font-weight: 300;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        @media (max-width: 900px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.5rem;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .card:hover {
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 20px rgba(88, 166, 255, 0.1);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 1.25rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .card-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+        }
+
+        .card-icon.upload { background: linear-gradient(135deg, var(--accent-green-dim), var(--accent-green)); }
+        .card-icon.folder { background: linear-gradient(135deg, var(--accent-orange), #e3b341); }
+        .card-icon.database { background: linear-gradient(135deg, var(--accent-blue), var(--accent-cyan)); }
+        .card-icon.history { background: linear-gradient(135deg, var(--accent-purple), #c084fc); }
+
+        .card-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        /* Upload Zone */
+        .upload-zone {
+            border: 2px dashed var(--border-color);
+            border-radius: 10px;
+            padding: 2.5rem 1.5rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background: var(--bg-tertiary);
+        }
+
+        .upload-zone:hover, .upload-zone.dragover {
+            border-color: var(--accent-green);
+            background: rgba(63, 185, 80, 0.05);
+        }
+
+        .upload-zone input {
+            display: none;
+        }
+
+        .upload-zone-icon {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .upload-zone-text {
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+        }
+
+        .upload-zone-hint {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+        }
+
+        /* Buttons */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.25rem;
+            border: none;
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 0.95rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent-green-dim), var(--accent-green));
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(63, 185, 80, 0.3);
+        }
+
+        .btn-secondary {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+
+        .btn-secondary:hover {
+            border-color: var(--accent-blue);
+            background: var(--bg-secondary);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 0.75rem;
+            margin-top: 1rem;
+        }
+
+        /* Toggle */
+        .toggle-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .toggle {
+            position: relative;
+            width: 44px;
+            height: 24px;
+        }
+
+        .toggle input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            inset: 0;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 24px;
+            transition: 0.2s;
+        }
+
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 2px;
+            bottom: 2px;
+            background: var(--text-secondary);
+            border-radius: 50%;
+            transition: 0.2s;
+        }
+
+        .toggle input:checked + .toggle-slider {
+            background: var(--accent-green-dim);
+            border-color: var(--accent-green);
+        }
+
+        .toggle input:checked + .toggle-slider:before {
+            transform: translateX(20px);
+            background: white;
+        }
+
+        .toggle-label {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        /* Watch Folder */
+        .watch-folder-path {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1rem;
+            background: var(--bg-tertiary);
+            border-radius: 8px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-bottom: 1rem;
+            overflow-x: auto;
+        }
+
+        .watch-folder-path .path-icon {
+            color: var(--accent-orange);
+        }
+
+        /* File List */
+        .file-list {
+            max-height: 200px;
+            overflow-y: auto;
+            margin-top: 1rem;
+        }
+
+        .file-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.6rem 0.75rem;
+            background: var(--bg-tertiary);
+            border-radius: 6px;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .file-item-icon {
+            color: var(--accent-green);
+        }
+
+        .file-item-name {
+            flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .file-item-sheets {
+            color: var(--text-muted);
+            font-size: 0.8rem;
+        }
+
+        /* Schema List */
+        .schema-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .schema-item {
+            background: var(--bg-tertiary);
+            border-radius: 8px;
+            margin-bottom: 0.75rem;
+            overflow: hidden;
+        }
+
+        .schema-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 1rem;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .schema-header:hover {
+            background: rgba(88, 166, 255, 0.05);
+        }
+
+        .schema-icon {
+            color: var(--accent-blue);
+        }
+
+        .schema-name {
+            flex: 1;
+            font-weight: 500;
+        }
+
+        .schema-meta {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+        }
+
+        .schema-tables {
+            padding: 0 1rem 0.75rem;
+            display: none;
+        }
+
+        .schema-tables.expanded {
+            display: block;
+        }
+
+        .table-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.4rem 0.75rem;
+            margin-top: 0.4rem;
+            background: var(--bg-secondary);
+            border-radius: 4px;
+            font-size: 0.85rem;
+        }
+
+        .table-icon {
+            color: var(--accent-cyan);
+            font-size: 0.75rem;
+        }
+
+        .table-name {
+            flex: 1;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .table-rows {
+            color: var(--text-muted);
+            font-size: 0.8rem;
+        }
+
+        /* History */
+        .history-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .history-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+            padding: 0.75rem;
+            background: var(--bg-tertiary);
+            border-radius: 8px;
+            margin-bottom: 0.5rem;
+        }
+
+        .history-status {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-top: 6px;
+            flex-shrink: 0;
+        }
+
+        .history-status.completed { background: var(--accent-green); }
+        .history-status.failed { background: var(--accent-red); }
+        .history-status.pending { background: var(--accent-orange); }
+
+        .history-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .history-file {
+            font-weight: 500;
+            margin-bottom: 0.25rem;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .history-details {
+            color: var(--text-muted);
+            font-size: 0.8rem;
+        }
+
+        .history-time {
+            color: var(--text-muted);
+            font-size: 0.75rem;
+            white-space: nowrap;
+        }
+
+        /* Results Panel */
+        .results-panel {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-top: 2rem;
+            display: none;
+        }
+
+        .results-panel.visible {
+            display: block;
+        }
+
+        .results-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .results-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        .results-close {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 1.25rem;
+            padding: 0.25rem;
+        }
+
+        .results-close:hover {
+            color: var(--text-primary);
+        }
+
+        .result-item {
+            background: var(--bg-tertiary);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .result-item-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .result-status-icon {
+            font-size: 1.25rem;
+        }
+
+        .result-status-icon.success { color: var(--accent-green); }
+        .result-status-icon.error { color: var(--accent-red); }
+
+        .result-file {
+            font-weight: 500;
+            flex: 1;
+        }
+
+        .result-time {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+        }
+
+        .result-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 0.75rem;
+        }
+
+        .result-stat {
+            background: var(--bg-secondary);
+            padding: 0.75rem;
+            border-radius: 6px;
+            text-align: center;
+        }
+
+        .result-stat-value {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--accent-cyan);
+        }
+
+        .result-stat-label {
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            margin-top: 0.25rem;
+        }
+
+        .result-error {
+            background: rgba(248, 81, 73, 0.1);
+            border: 1px solid rgba(248, 81, 73, 0.3);
+            border-radius: 6px;
+            padding: 0.75rem;
+            color: var(--accent-red);
+            font-size: 0.9rem;
+            margin-top: 0.75rem;
+        }
+
+        /* Status Bar */
+        .status-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: var(--bg-secondary);
+            border-top: 1px solid var(--border-color);
+            padding: 0.75rem 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 0.85rem;
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--accent-green);
+        }
+
+        .status-dot.processing {
+            background: var(--accent-orange);
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+
+        .status-text {
+            color: var(--text-secondary);
+        }
+
+        .health-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            color: var(--text-muted);
+        }
+
+        .health-item {
+            display: flex;
+            align-items: center;
+            gap: 0.35rem;
+        }
+
+        .health-icon {
+            font-size: 0.9rem;
+        }
+
+        .health-icon.connected { color: var(--accent-green); }
+        .health-icon.disconnected { color: var(--accent-red); }
+
+        /* Loading Spinner */
+        .spinner {
+            width: 16px;
+            height: 16px;
+            border: 2px solid var(--border-color);
+            border-top-color: var(--accent-blue);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-muted);
+        }
+
+        .empty-state-icon {
+            font-size: 2.5rem;
+            margin-bottom: 0.75rem;
+            opacity: 0.5;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-tertiary);
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--text-muted);
+        }
+
+        /* Utility */
+        .mb-1 { margin-bottom: 1rem; }
+        .mt-1 { margin-top: 1rem; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Excel → PostgreSQL</h1>
+            <p class="subtitle">Convert Excel files to structured database tables with AI-powered column standardization</p>
+        </header>
+
+        <div class="grid">
+            <!-- Upload Card -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-icon upload">📤</div>
+                    <h2 class="card-title">Upload Excel File</h2>
+                </div>
+                <div class="upload-zone" id="uploadZone">
+                    <input type="file" id="fileInput" accept=".xlsx,.xls,.xlsm">
+                    <div class="upload-zone-icon">📊</div>
+                    <div class="upload-zone-text">Drop your Excel file here or click to browse</div>
+                    <div class="upload-zone-hint">Supports .xlsx, .xls, .xlsm files</div>
+                </div>
+                <div class="toggle-wrapper">
+                    <label class="toggle">
+                        <input type="checkbox" id="useLlmToggle" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                    <span class="toggle-label">Use AI for column standardization</span>
+                </div>
+            </div>
+
+            <!-- Watch Folder Card -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-icon folder">📁</div>
+                    <h2 class="card-title">Watch Folder</h2>
+                </div>
+                <div class="watch-folder-path">
+                    <span class="path-icon">📂</span>
+                    <span id="watchFolderPath">Loading...</span>
+                </div>
+                <div id="watchFolderFiles" class="file-list">
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📭</div>
+                        <div>No Excel files in watch folder</div>
+                    </div>
+                </div>
+                <div class="btn-group">
+                    <button class="btn btn-primary" id="scanFolderBtn">
+                        🔍 Scan & Process
+                    </button>
+                    <button class="btn btn-secondary" id="refreshFolderBtn">
+                        🔄 Refresh
+                    </button>
+                </div>
+            </div>
+
+            <!-- Database Schemas Card -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-icon database">🗄️</div>
+                    <h2 class="card-title">Database Schemas</h2>
+                </div>
+                <div id="schemaList" class="schema-list">
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📦</div>
+                        <div>No schemas found</div>
+                    </div>
+                </div>
+                <div class="btn-group">
+                    <button class="btn btn-secondary" id="refreshSchemasBtn">
+                        🔄 Refresh
+                    </button>
+                </div>
+            </div>
+
+            <!-- History Card -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-icon history">📜</div>
+                    <h2 class="card-title">Import History</h2>
+                </div>
+                <div id="historyList" class="history-list">
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📝</div>
+                        <div>No imports yet</div>
+                    </div>
+                </div>
+                <div class="btn-group">
+                    <button class="btn btn-secondary" id="refreshHistoryBtn">
+                        🔄 Refresh
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results Panel -->
+        <div class="results-panel" id="resultsPanel">
+            <div class="results-header">
+                <h3 class="results-title">Processing Results</h3>
+                <button class="results-close" id="closeResultsBtn">×</button>
+            </div>
+            <div id="resultsContent"></div>
+        </div>
+    </div>
+
+    <!-- Status Bar -->
+    <div class="status-bar">
+        <div class="status-indicator">
+            <div class="status-dot" id="statusDot"></div>
+            <span class="status-text" id="statusText">Ready</span>
+        </div>
+        <div class="health-info">
+            <div class="health-item">
+                <span class="health-icon" id="dbHealthIcon">●</span>
+                <span id="dbHealthText">Database</span>
+            </div>
+            <div class="health-item">
+                <span class="health-icon" id="aiHealthIcon">●</span>
+                <span id="aiHealthText">AI</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = '';
+
+        // DOM Elements
+        const uploadZone = document.getElementById('uploadZone');
+        const fileInput = document.getElementById('fileInput');
+        const useLlmToggle = document.getElementById('useLlmToggle');
+        const watchFolderPath = document.getElementById('watchFolderPath');
+        const watchFolderFiles = document.getElementById('watchFolderFiles');
+        const scanFolderBtn = document.getElementById('scanFolderBtn');
+        const refreshFolderBtn = document.getElementById('refreshFolderBtn');
+        const schemaList = document.getElementById('schemaList');
+        const refreshSchemasBtn = document.getElementById('refreshSchemasBtn');
+        const historyList = document.getElementById('historyList');
+        const refreshHistoryBtn = document.getElementById('refreshHistoryBtn');
+        const resultsPanel = document.getElementById('resultsPanel');
+        const resultsContent = document.getElementById('resultsContent');
+        const closeResultsBtn = document.getElementById('closeResultsBtn');
+        const statusDot = document.getElementById('statusDot');
+        const statusText = document.getElementById('statusText');
+        const dbHealthIcon = document.getElementById('dbHealthIcon');
+        const dbHealthText = document.getElementById('dbHealthText');
+        const aiHealthIcon = document.getElementById('aiHealthIcon');
+        const aiHealthText = document.getElementById('aiHealthText');
+
+        // Upload Zone Events
+        uploadZone.addEventListener('click', () => fileInput.click());
+        uploadZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadZone.classList.add('dragover');
+        });
+        uploadZone.addEventListener('dragleave', () => {
+            uploadZone.classList.remove('dragover');
+        });
+        uploadZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadZone.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                uploadFile(files[0]);
+            }
+        });
+        fileInput.addEventListener('change', () => {
+            if (fileInput.files.length > 0) {
+                uploadFile(fileInput.files[0]);
+            }
+        });
+
+        // Button Events
+        scanFolderBtn.addEventListener('click', scanFolder);
+        refreshFolderBtn.addEventListener('click', loadWatchFolder);
+        refreshSchemasBtn.addEventListener('click', loadSchemas);
+        refreshHistoryBtn.addEventListener('click', loadHistory);
+        closeResultsBtn.addEventListener('click', () => {
+            resultsPanel.classList.remove('visible');
+        });
+
+        // API Functions
+        async function uploadFile(file) {
+            const useLlm = useLlmToggle.checked;
+            const formData = new FormData();
+            formData.append('file', file);
+
+            setStatus('processing', `Processing ${file.name}...`);
+
+            try {
+                const response = await fetch(`${API_BASE}/api/upload?use_llm=${useLlm}`, {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showResults([data.result]);
+                    setStatus('ready', 'File processed successfully');
+                } else {
+                    setStatus('ready', `Error: ${data.detail || 'Upload failed'}`);
+                }
+            } catch (error) {
+                console.error('Upload error:', error);
+                setStatus('ready', 'Error uploading file');
+            }
+
+            // Refresh data
+            loadSchemas();
+            loadHistory();
+            fileInput.value = '';
+        }
+
+        async function scanFolder() {
+            setStatus('processing', 'Scanning folder...');
+            scanFolderBtn.disabled = true;
+
+            try {
+                const response = await fetch(`${API_BASE}/api/scan-folder`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ recursive: true })
+                });
+                const data = await response.json();
+
+                if (response.ok) {
+                    if (data.results && data.results.length > 0) {
+                        showResults(data.results);
+                    }
+                    setStatus('ready', data.message);
+                } else {
+                    setStatus('ready', `Error: ${data.detail || 'Scan failed'}`);
+                }
+            } catch (error) {
+                console.error('Scan error:', error);
+                setStatus('ready', 'Error scanning folder');
+            }
+
+            scanFolderBtn.disabled = false;
+            loadSchemas();
+            loadHistory();
+            loadWatchFolder();
+        }
+
+        async function loadWatchFolder() {
+            try {
+                const response = await fetch(`${API_BASE}/api/watch-folder`);
+                const data = await response.json();
+
+                watchFolderPath.textContent = data.path;
+
+                if (data.files && data.files.length > 0) {
+                    watchFolderFiles.innerHTML = data.files.map(file => `
+                        <div class="file-item">
+                            <span class="file-item-icon">📄</span>
+                            <span class="file-item-name" title="${file.file_path}">${file.file_name}</span>
+                            <span class="file-item-sheets">${file.sheets.length} sheet(s)</span>
+                        </div>
+                    `).join('');
+                } else {
+                    watchFolderFiles.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-state-icon">📭</div>
+                            <div>No Excel files in watch folder</div>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('Error loading watch folder:', error);
+            }
+        }
+
+        async function loadSchemas() {
+            try {
+                const response = await fetch(`${API_BASE}/api/schemas`);
+                const data = await response.json();
+
+                if (data.schemas && data.schemas.length > 0) {
+                    schemaList.innerHTML = data.schemas.map((schema, idx) => `
+                        <div class="schema-item">
+                            <div class="schema-header" onclick="toggleSchema(${idx})">
+                                <span class="schema-icon">📁</span>
+                                <span class="schema-name">${schema.schema_name}</span>
+                                <span class="schema-meta">${schema.tables.length} table(s) · ${schema.total_rows.toLocaleString()} rows</span>
+                            </div>
+                            <div class="schema-tables" id="schema-${idx}">
+                                ${schema.tables.map(table => `
+                                    <div class="table-item">
+                                        <span class="table-icon">📋</span>
+                                        <span class="table-name">${table}</span>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    schemaList.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-state-icon">📦</div>
+                            <div>No schemas found</div>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('Error loading schemas:', error);
+            }
+        }
+
+        async function loadHistory() {
+            try {
+                const response = await fetch(`${API_BASE}/api/history?limit=20`);
+                const data = await response.json();
+
+                if (data.history && data.history.length > 0) {
+                    historyList.innerHTML = data.history.map(entry => {
+                        const date = new Date(entry.processed_at);
+                        const timeStr = date.toLocaleString();
+                        return `
+                            <div class="history-item">
+                                <div class="history-status ${entry.status}"></div>
+                                <div class="history-content">
+                                    <div class="history-file">${entry.file_name}</div>
+                                    <div class="history-details">
+                                        ${entry.schema_name}.${entry.table_name} · ${entry.rows_inserted} rows
+                                    </div>
+                                </div>
+                                <div class="history-time">${timeStr}</div>
+                            </div>
+                        `;
+                    }).join('');
+                } else {
+                    historyList.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-state-icon">📝</div>
+                            <div>No imports yet</div>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('Error loading history:', error);
+            }
+        }
+
+        async function checkHealth() {
+            try {
+                const response = await fetch(`${API_BASE}/api/health`);
+                const data = await response.json();
+
+                if (data.database === 'connected') {
+                    dbHealthIcon.classList.add('connected');
+                    dbHealthIcon.classList.remove('disconnected');
+                    dbHealthText.textContent = 'DB Connected';
+                } else {
+                    dbHealthIcon.classList.add('disconnected');
+                    dbHealthIcon.classList.remove('connected');
+                    dbHealthText.textContent = 'DB Error';
+                }
+
+                if (data.openai_configured) {
+                    aiHealthIcon.classList.add('connected');
+                    aiHealthIcon.classList.remove('disconnected');
+                    aiHealthText.textContent = 'AI Enabled';
+                } else {
+                    aiHealthIcon.classList.add('disconnected');
+                    aiHealthIcon.classList.remove('connected');
+                    aiHealthText.textContent = 'AI Disabled';
+                }
+            } catch (error) {
+                console.error('Health check error:', error);
+                dbHealthIcon.classList.add('disconnected');
+                aiHealthIcon.classList.add('disconnected');
+            }
+        }
+
+        function toggleSchema(idx) {
+            const el = document.getElementById(`schema-${idx}`);
+            el.classList.toggle('expanded');
+        }
+
+        function setStatus(state, text) {
+            statusText.textContent = text;
+            if (state === 'processing') {
+                statusDot.classList.add('processing');
+            } else {
+                statusDot.classList.remove('processing');
+            }
+        }
+
+        function showResults(results) {
+            if (!results || results.length === 0) return;
+
+            resultsContent.innerHTML = results.map(result => {
+                const isSuccess = result.status === 'completed';
+                return `
+                    <div class="result-item">
+                        <div class="result-item-header">
+                            <span class="result-status-icon ${isSuccess ? 'success' : 'error'}">
+                                ${isSuccess ? '✓' : '✗'}
+                            </span>
+                            <span class="result-file">${result.file_path.split('/').pop()}</span>
+                            <span class="result-time">${result.processing_time_seconds.toFixed(2)}s</span>
+                        </div>
+                        <div class="result-details">
+                            <div class="result-stat">
+                                <div class="result-stat-value">${result.schema_name || '-'}</div>
+                                <div class="result-stat-label">Schema</div>
+                            </div>
+                            <div class="result-stat">
+                                <div class="result-stat-value">${result.tables_created.length}</div>
+                                <div class="result-stat-label">Tables Created</div>
+                            </div>
+                            <div class="result-stat">
+                                <div class="result-stat-value">${result.tables_updated.length}</div>
+                                <div class="result-stat-label">Tables Updated</div>
+                            </div>
+                            <div class="result-stat">
+                                <div class="result-stat-value">${result.total_rows_inserted.toLocaleString()}</div>
+                                <div class="result-stat-label">Rows Inserted</div>
+                            </div>
+                        </div>
+                        ${result.error_message ? `
+                            <div class="result-error">${result.error_message}</div>
+                        ` : ''}
+                    </div>
+                `;
+            }).join('');
+
+            resultsPanel.classList.add('visible');
+        }
+
+        // Initial load
+        document.addEventListener('DOMContentLoaded', () => {
+            checkHealth();
+            loadWatchFolder();
+            loadSchemas();
+            loadHistory();
+
+            // Periodic health check
+            setInterval(checkHealth, 30000);
+        });
+    </script>
+</body>
+</html>
+

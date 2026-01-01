@@ -1,0 +1,469 @@
+"""FastAPI application for Excel-to-PostgreSQL converter."""
+
+import os
+import shutil
+import logging
+from pathlib import Path
+from typing import Optional
+from datetime import datetime
+from contextlib import asynccontextmanager
+
+from fastapi import FastAPI, UploadFile, File, HTTPException, BackgroundTasks
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse, JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
+
+from backend.config import get_settings
+from backend.services.excel_processor import ExcelProcessor
+from backend.services.db_manager import DatabaseManager
+from backend.services.llm_standardizer import LLMStandardizer
+from backend.models.schemas import (
+    UploadResponse,
+    ScanFolderRequest,
+    ScanFolderResponse,
+    StatusResponse,
+    ProcessingResult,
+    ProcessingStatus,
+    SchemaInfo,
+    TableInfo,
+    ErrorResponse
+)
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
+
+# Application state
+class AppState:
+    is_processing: bool = False
+    current_file: Optional[str] = None
+    files_in_queue: int = 0
+    last_processed: Optional[str] = None
+    processing_results: list[ProcessingResult] = []
+
+app_state = AppState()
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Application lifespan handler."""
+    # Startup
+    settings = get_settings()
+    
+    # Ensure watch folder exists
+    watch_folder = Path(settings.watch_folder)
+    watch_folder.mkdir(parents=True, exist_ok=True)
+    
+    # Ensure temp upload folder exists
+    temp_folder = Path("temp_uploads")
+    temp_folder.mkdir(parents=True, exist_ok=True)
+    
+    logger.info(f"Watch folder: {watch_folder.absolute()}")
+    logger.info("Application started")
+    
+    yield
+    
+    # Shutdown
+    logger.info("Application shutting down")
+
+
+# Create FastAPI app
+app = FastAPI(
+    title="Excel-to-PostgreSQL Converter",
+    description="Convert Excel files to structured PostgreSQL database tables with LLM-powered column standardization",
+    version="1.0.0",
+    lifespan=lifespan
+)
+
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+def process_single_file(
+    file_path: str,
+    use_llm: bool = True
+) -> ProcessingResult:
+    """
+    Process a single Excel file.
+    
+    Args:
+        file_path: Path to the Excel file
+        use_llm: Whether to use LLM for column standardization
+        
+    Returns:
+        ProcessingResult with processing details
+    """
+    start_time = datetime.now()
+    processor = ExcelProcessor()
+    standardizer = LLMStandardizer() if use_llm else None
+    
+    try:
+        # Parse the Excel file first to get column info
+        excel_data = processor.parse_excel_file(file_path)
+        
+        # Get column mappings from LLM if enabled
+        column_mappings = {}
+        if standardizer and standardizer.client:
+            for sheet in excel_data.sheets:
+                try:
+                    result = standardizer.standardize_columns(
+                        excel_data.schema_name,
+                        sheet.table_name,
+                        sheet.columns
+                    )
+                    column_mappings[sheet.table_name] = standardizer.get_mapping_dict(result)
+                    logger.info(f"Standardized columns for {sheet.table_name}: {column_mappings[sheet.table_name]}")
+                except Exception as e:
+                    logger.error(f"Error standardizing columns for {sheet.table_name}: {e}")
+        
+        # Process the file with column mappings
+        result = processor.process_file(file_path, column_mappings)
+        
+        processing_time = (datetime.now() - start_time).total_seconds()
+        
+        return ProcessingResult(
+            file_path=file_path,
+            schema_name=result['schema_name'],
+            tables_created=result['tables_created'],
+            tables_updated=result['tables_updated'],
+            total_rows_inserted=result['total_rows_inserted'],
+            status=ProcessingStatus.COMPLETED if not result['errors'] else ProcessingStatus.FAILED,
+            error_message='; '.join(result['errors']) if result['errors'] else None,
+            processing_time_seconds=processing_time
+        )
+        
+    except Exception as e:
+        logger.error(f"Error processing file {file_path}: {e}")
+        processing_time = (datetime.now() - start_time).total_seconds()
+        return ProcessingResult(
+            file_path=file_path,
+            schema_name="",
+            tables_created=[],
+            tables_updated=[],
+            total_rows_inserted=0,
+            status=ProcessingStatus.FAILED,
+            error_message=str(e),
+            processing_time_seconds=processing_time
+        )
+    finally:
+        if standardizer:
+            standardizer.close()
+
+
+def process_files_background(file_paths: list[str], use_llm: bool = True):
+    """Background task to process multiple files."""
+    global app_state
+    
+    app_state.is_processing = True
+    app_state.files_in_queue = len(file_paths)
+    app_state.processing_results = []
+    
+    for file_path in file_paths:
+        app_state.current_file = file_path
+        
+        result = process_single_file(file_path, use_llm)
+        app_state.processing_results.append(result)
+        
+        app_state.files_in_queue -= 1
+        app_state.last_processed = file_path
+    
+    app_state.is_processing = False
+    app_state.current_file = None
+
+
+# Serve frontend
+@app.get("/", response_class=FileResponse)
+async def serve_frontend():
+    """Serve the frontend HTML page."""
+    frontend_path = Path(__file__).parent.parent / "frontend" / "index.html"
+    if frontend_path.exists():
+        return FileResponse(frontend_path)
+    raise HTTPException(status_code=404, detail="Frontend not found")
+
+
+@app.post("/api/upload", response_model=UploadResponse)
+async def upload_file(
+    background_tasks: BackgroundTasks,
+    file: UploadFile = File(...),
+    use_llm: bool = True
+):
+    """
+    Upload and process a single Excel file.
+    
+    The file will be processed and imported into the database.
+    """
+    # Validate file extension
+    if not file.filename:
+        raise HTTPException(status_code=400, detail="No filename provided")
+    
+    ext = Path(file.filename).suffix.lower()
+    if ext not in {'.xlsx', '.xls', '.xlsm'}:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Unsupported file type: {ext}. Supported: .xlsx, .xls, .xlsm"
+        )
+    
+    # Save uploaded file temporarily
+    temp_dir = Path("temp_uploads")
+    temp_dir.mkdir(exist_ok=True)
+    
+    temp_path = temp_dir / file.filename
+    
+    try:
+        with open(temp_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+        
+        # Process the file
+        result = process_single_file(str(temp_path), use_llm)
+        
+        return UploadResponse(
+            message=f"File processed successfully" if result.status == ProcessingStatus.COMPLETED else "File processing failed",
+            file_name=file.filename,
+            status=result.status,
+            result=result
+        )
+        
+    except Exception as e:
+        logger.error(f"Error uploading file: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+    
+    finally:
+        # Clean up temp file
+        if temp_path.exists():
+            temp_path.unlink()
+
+
+@app.post("/api/scan-folder", response_model=ScanFolderResponse)
+async def scan_folder(
+    background_tasks: BackgroundTasks,
+    request: ScanFolderRequest = None
+):
+    """
+    Scan a folder for Excel files and process them.
+    
+    If no folder path is provided, uses the configured watch folder.
+    """
+    settings = get_settings()
+    
+    # Use provided folder or default watch folder
+    folder_path = request.folder_path if request and request.folder_path else settings.watch_folder
+    recursive = request.recursive if request else True
+    dry_run = request.dry_run if request else False
+    
+    # Validate folder exists
+    folder = Path(folder_path)
+    if not folder.exists():
+        raise HTTPException(status_code=404, detail=f"Folder not found: {folder_path}")
+    
+    if not folder.is_dir():
+        raise HTTPException(status_code=400, detail=f"Path is not a directory: {folder_path}")
+    
+    # Discover Excel files
+    processor = ExcelProcessor()
+    files = list(processor.discover_excel_files(str(folder), recursive))
+    
+    if dry_run:
+        return ScanFolderResponse(
+            message=f"Found {len(files)} Excel file(s) (dry run)",
+            files_found=len(files),
+            files_processed=0,
+            results=[
+                ProcessingResult(
+                    file_path=f.file_path,
+                    schema_name=DatabaseManager.sanitize_name(f.file_name),
+                    tables_created=[],
+                    tables_updated=[],
+                    total_rows_inserted=0,
+                    status=ProcessingStatus.PENDING
+                )
+                for f in files
+            ]
+        )
+    
+    if not files:
+        return ScanFolderResponse(
+            message="No Excel files found in the specified folder",
+            files_found=0,
+            files_processed=0,
+            results=[]
+        )
+    
+    # Process files
+    results = []
+    for file_info in files:
+        result = process_single_file(file_info.file_path)
+        results.append(result)
+    
+    successful = sum(1 for r in results if r.status == ProcessingStatus.COMPLETED)
+    
+    return ScanFolderResponse(
+        message=f"Processed {successful}/{len(files)} files successfully",
+        files_found=len(files),
+        files_processed=successful,
+        results=results
+    )
+
+
+@app.get("/api/status", response_model=StatusResponse)
+async def get_status():
+    """Get the current processing status."""
+    return StatusResponse(
+        is_processing=app_state.is_processing,
+        current_file=app_state.current_file,
+        files_in_queue=app_state.files_in_queue,
+        last_processed=app_state.last_processed
+    )
+
+
+@app.get("/api/history")
+async def get_history(limit: int = 100):
+    """Get import history."""
+    db_manager = DatabaseManager()
+    try:
+        history = db_manager.get_import_history(limit)
+        # Convert datetime objects to strings for JSON serialization
+        for entry in history:
+            if 'processed_at' in entry and entry['processed_at']:
+                entry['processed_at'] = entry['processed_at'].isoformat()
+        return {"history": history}
+    except Exception as e:
+        logger.error(f"Error getting history: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        db_manager.close()
+
+
+@app.get("/api/schemas")
+async def list_schemas():
+    """List all schemas in the database."""
+    db_manager = DatabaseManager()
+    try:
+        schemas = db_manager.get_all_schemas()
+        
+        schema_info = []
+        for schema in schemas:
+            tables = db_manager.get_schema_tables(schema)
+            total_rows = 0
+            for table in tables:
+                try:
+                    total_rows += db_manager.get_table_row_count(schema, table)
+                except:
+                    pass
+            
+            schema_info.append(SchemaInfo(
+                schema_name=schema,
+                tables=tables,
+                total_rows=total_rows
+            ))
+        
+        return {"schemas": [s.model_dump() for s in schema_info]}
+    except Exception as e:
+        logger.error(f"Error listing schemas: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        db_manager.close()
+
+
+@app.get("/api/schemas/{schema_name}/tables")
+async def list_tables(schema_name: str):
+    """List all tables in a schema."""
+    db_manager = DatabaseManager()
+    try:
+        tables = db_manager.get_schema_tables(schema_name)
+        
+        table_info = []
+        for table in tables:
+            columns = db_manager.get_table_columns(schema_name, table)
+            row_count = db_manager.get_table_row_count(schema_name, table)
+            
+            table_info.append(TableInfo(
+                schema_name=schema_name,
+                table_name=table,
+                columns=columns,
+                row_count=row_count
+            ))
+        
+        return {"tables": [t.model_dump() for t in table_info]}
+    except Exception as e:
+        logger.error(f"Error listing tables: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        db_manager.close()
+
+
+@app.get("/api/watch-folder")
+async def get_watch_folder():
+    """Get the configured watch folder path and its contents."""
+    settings = get_settings()
+    folder = Path(settings.watch_folder)
+    
+    if not folder.exists():
+        folder.mkdir(parents=True, exist_ok=True)
+    
+    processor = ExcelProcessor()
+    files = list(processor.discover_excel_files(str(folder), recursive=True))
+    
+    return {
+        "path": str(folder.absolute()),
+        "files": [
+            {
+                "file_path": f.file_path,
+                "file_name": f.file_name,
+                "file_size": f.file_size,
+                "sheets": f.sheets
+            }
+            for f in files
+        ]
+    }
+
+
+@app.delete("/api/cache")
+async def clear_cache():
+    """Clear the LLM column mapping cache."""
+    standardizer = LLMStandardizer()
+    standardizer.clear_cache()
+    return {"message": "Cache cleared successfully"}
+
+
+@app.get("/api/health")
+async def health_check():
+    """Health check endpoint."""
+    db_manager = DatabaseManager()
+    try:
+        # Try to connect to the database
+        conn = db_manager._get_connection()
+        db_status = "connected" if conn and not conn.closed else "disconnected"
+    except Exception as e:
+        db_status = f"error: {str(e)}"
+    finally:
+        db_manager.close()
+    
+    settings = get_settings()
+    
+    return {
+        "status": "healthy",
+        "database": db_status,
+        "openai_configured": bool(settings.openai_api_key),
+        "watch_folder": settings.watch_folder
+    }
+
+
+# Error handlers
+@app.exception_handler(Exception)
+async def global_exception_handler(request, exc):
+    """Global exception handler."""
+    logger.error(f"Unhandled exception: {exc}")
+    return JSONResponse(
+        status_code=500,
+        content={"error": "Internal server error", "detail": str(exc)}
+    )
+
