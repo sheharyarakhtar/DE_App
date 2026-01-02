@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Excel → PostgreSQL Converter</title>
+    <title>Data → PostgreSQL Converter</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -45,12 +45,13 @@
             max-width: 1200px;
             margin: 0 auto;
             padding: 2rem;
+            padding-bottom: 5rem;
         }
 
         header {
             text-align: center;
-            margin-bottom: 3rem;
-            padding: 2rem 0;
+            margin-bottom: 2rem;
+            padding: 1.5rem 0;
             border-bottom: 1px solid var(--border-color);
         }
 
@@ -68,6 +69,75 @@
             color: var(--text-secondary);
             font-size: 1.1rem;
             font-weight: 300;
+        }
+
+        /* Company Name Section */
+        .company-section {
+            background: var(--bg-secondary);
+            border: 2px solid var(--accent-purple);
+            border-radius: 12px;
+            padding: 1.25rem;
+            margin-bottom: 2rem;
+        }
+
+        .company-section-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+        }
+
+        .company-icon {
+            font-size: 1.5rem;
+        }
+
+        .company-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        .company-subtitle {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            margin-left: auto;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .input-wrapper {
+            flex: 1;
+            position: relative;
+        }
+
+        .input-wrapper input {
+            width: 100%;
+            padding: 0.85rem 1rem;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 1rem;
+            transition: border-color 0.2s;
+        }
+
+        .input-wrapper input:focus {
+            outline: none;
+            border-color: var(--accent-purple);
+        }
+
+        .input-wrapper input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .input-hint {
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            margin-top: 0.5rem;
         }
 
         .grid {
@@ -129,7 +199,7 @@
         .upload-zone {
             border: 2px dashed var(--border-color);
             border-radius: 10px;
-            padding: 2.5rem 1.5rem;
+            padding: 2rem 1.5rem;
             text-align: center;
             cursor: pointer;
             transition: all 0.2s ease;
@@ -289,7 +359,7 @@
 
         /* File List */
         .file-list {
-            max-height: 200px;
+            max-height: 180px;
             overflow-y: auto;
             margin-top: 1rem;
         }
@@ -307,6 +377,10 @@
 
         .file-item-icon {
             color: var(--accent-green);
+        }
+
+        .file-item-icon.csv {
+            color: var(--accent-orange);
         }
 
         .file-item-name {
@@ -664,6 +738,17 @@
             background: var(--text-muted);
         }
 
+        /* Validation Error */
+        .input-error {
+            border-color: var(--accent-red) !important;
+        }
+
+        .error-message {
+            color: var(--accent-red);
+            font-size: 0.85rem;
+            margin-top: 0.5rem;
+        }
+
         /* Utility */
         .mb-1 { margin-bottom: 1rem; }
         .mt-1 { margin-top: 1rem; }
@@ -672,22 +757,39 @@
 <body>
     <div class="container">
         <header>
-            <h1>Excel → PostgreSQL</h1>
-            <p class="subtitle">Convert Excel files to structured database tables with AI-powered column standardization</p>
+            <h1>Data → PostgreSQL</h1>
+            <p class="subtitle">Convert Excel & CSV files to structured database tables with AI-powered column standardization</p>
         </header>
+
+        <!-- Company Name Section -->
+        <div class="company-section">
+            <div class="company-section-header">
+                <span class="company-icon">🏢</span>
+                <span class="company-title">Company / Schema Name</span>
+                <span class="company-subtitle">All data will be stored under this schema</span>
+            </div>
+            <div class="input-group">
+                <div class="input-wrapper">
+                    <input type="text" id="companyNameInput" placeholder="Enter company name (e.g., acme_corp, my_company)" />
+                    <div class="input-hint">
+                        Table naming: <strong>Excel</strong> → filename_sheetname | <strong>CSV</strong> → filename
+                    </div>
+                </div>
+            </div>
+        </div>
 
         <div class="grid">
             <!-- Upload Card -->
             <div class="card">
                 <div class="card-header">
                     <div class="card-icon upload">📤</div>
-                    <h2 class="card-title">Upload Excel File</h2>
+                    <h2 class="card-title">Upload File</h2>
                 </div>
                 <div class="upload-zone" id="uploadZone">
-                    <input type="file" id="fileInput" accept=".xlsx,.xls,.xlsm">
+                    <input type="file" id="fileInput" accept=".xlsx,.xls,.xlsm,.csv">
                     <div class="upload-zone-icon">📊</div>
-                    <div class="upload-zone-text">Drop your Excel file here or click to browse</div>
-                    <div class="upload-zone-hint">Supports .xlsx, .xls, .xlsm files</div>
+                    <div class="upload-zone-text">Drop your file here or click to browse</div>
+                    <div class="upload-zone-hint">Supports .xlsx, .xls, .xlsm, .csv files</div>
                 </div>
                 <div class="toggle-wrapper">
                     <label class="toggle">
@@ -711,7 +813,7 @@
                 <div id="watchFolderFiles" class="file-list">
                     <div class="empty-state">
                         <div class="empty-state-icon">📭</div>
-                        <div>No Excel files in watch folder</div>
+                        <div>No files in watch folder</div>
                     </div>
                 </div>
                 <div class="btn-group">
@@ -795,6 +897,7 @@
         const API_BASE = '';
 
         // DOM Elements
+        const companyNameInput = document.getElementById('companyNameInput');
         const uploadZone = document.getElementById('uploadZone');
         const fileInput = document.getElementById('fileInput');
         const useLlmToggle = document.getElementById('useLlmToggle');
@@ -815,6 +918,29 @@
         const dbHealthText = document.getElementById('dbHealthText');
         const aiHealthIcon = document.getElementById('aiHealthIcon');
         const aiHealthText = document.getElementById('aiHealthText');
+
+        // Load saved company name from localStorage
+        const savedCompanyName = localStorage.getItem('companyName');
+        if (savedCompanyName) {
+            companyNameInput.value = savedCompanyName;
+        }
+
+        // Save company name on change
+        companyNameInput.addEventListener('input', () => {
+            localStorage.setItem('companyName', companyNameInput.value);
+        });
+
+        // Validate company name
+        function validateCompanyName() {
+            const companyName = companyNameInput.value.trim();
+            if (!companyName) {
+                companyNameInput.classList.add('input-error');
+                setStatus('ready', 'Please enter a company name first');
+                return null;
+            }
+            companyNameInput.classList.remove('input-error');
+            return companyName;
+        }
 
         // Upload Zone Events
         uploadZone.addEventListener('click', () => fileInput.click());
@@ -850,14 +976,19 @@
 
         // API Functions
         async function uploadFile(file) {
+            const companyName = validateCompanyName();
+            if (!companyName) return;
+
             const useLlm = useLlmToggle.checked;
             const formData = new FormData();
             formData.append('file', file);
+            formData.append('company_name', companyName);
+            formData.append('use_llm', useLlm);
 
             setStatus('processing', `Processing ${file.name}...`);
 
             try {
-                const response = await fetch(`${API_BASE}/api/upload?use_llm=${useLlm}`, {
+                const response = await fetch(`${API_BASE}/api/upload`, {
                     method: 'POST',
                     body: formData
                 });
@@ -881,6 +1012,9 @@
         }
 
         async function scanFolder() {
+            const companyName = validateCompanyName();
+            if (!companyName) return;
+
             setStatus('processing', 'Scanning folder...');
             scanFolderBtn.disabled = true;
 
@@ -888,7 +1022,10 @@
                 const response = await fetch(`${API_BASE}/api/scan-folder`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ recursive: true })
+                    body: JSON.stringify({ 
+                        recursive: true,
+                        company_name: companyName
+                    })
                 });
                 const data = await response.json();
 
@@ -919,18 +1056,21 @@
                 watchFolderPath.textContent = data.path;
 
                 if (data.files && data.files.length > 0) {
-                    watchFolderFiles.innerHTML = data.files.map(file => `
-                        <div class="file-item">
-                            <span class="file-item-icon">📄</span>
-                            <span class="file-item-name" title="${file.file_path}">${file.file_name}</span>
-                            <span class="file-item-sheets">${file.sheets.length} sheet(s)</span>
-                        </div>
-                    `).join('');
+                    watchFolderFiles.innerHTML = data.files.map(file => {
+                        const isCSV = file.file_name.toLowerCase().endsWith('.csv');
+                        return `
+                            <div class="file-item">
+                                <span class="file-item-icon ${isCSV ? 'csv' : ''}">${isCSV ? '📋' : '📄'}</span>
+                                <span class="file-item-name" title="${file.file_path}">${file.file_name}</span>
+                                <span class="file-item-sheets">${isCSV ? 'CSV' : file.sheets.length + ' sheet(s)'}</span>
+                            </div>
+                        `;
+                    }).join('');
                 } else {
                     watchFolderFiles.innerHTML = `
                         <div class="empty-state">
                             <div class="empty-state-icon">📭</div>
-                            <div>No Excel files in watch folder</div>
+                            <div>No files in watch folder</div>
                         </div>
                     `;
                 }
@@ -1110,4 +1250,3 @@
     </script>
 </body>
 </html>
-

@@ -1,4 +1,4 @@
-"""FastAPI application for Excel-to-PostgreSQL converter."""
+"""FastAPI application for Excel/CSV-to-PostgreSQL converter."""
 
 import os
 import shutil
@@ -8,13 +8,13 @@ from typing import Optional
 from datetime import datetime
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, UploadFile, File, HTTPException, BackgroundTasks
+from fastapi import FastAPI, UploadFile, File, HTTPException, BackgroundTasks, Form
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 
 from backend.config import get_settings
-from backend.services.excel_processor import ExcelProcessor
+from backend.services.file_processor import FileProcessor
 from backend.services.db_manager import DatabaseManager
 from backend.services.llm_standardizer import LLMStandardizer
 from backend.models.schemas import (
@@ -72,9 +72,9 @@ async def lifespan(app: FastAPI):
 
 # Create FastAPI app
 app = FastAPI(
-    title="Excel-to-PostgreSQL Converter",
-    description="Convert Excel files to structured PostgreSQL database tables with LLM-powered column standardization",
-    version="1.0.0",
+    title="Data-to-PostgreSQL Converter",
+    description="Convert Excel and CSV files to structured PostgreSQL database tables with LLM-powered column standardization",
+    version="2.0.0",
     lifespan=lifespan
 )
 
@@ -90,33 +90,35 @@ app.add_middleware(
 
 def process_single_file(
     file_path: str,
+    company_name: str,
     use_llm: bool = True
 ) -> ProcessingResult:
     """
-    Process a single Excel file.
+    Process a single file (Excel or CSV).
     
     Args:
-        file_path: Path to the Excel file
+        file_path: Path to the file
+        company_name: Company name to use as schema
         use_llm: Whether to use LLM for column standardization
         
     Returns:
         ProcessingResult with processing details
     """
     start_time = datetime.now()
-    processor = ExcelProcessor()
+    processor = FileProcessor()
     standardizer = LLMStandardizer() if use_llm else None
     
     try:
-        # Parse the Excel file first to get column info
-        excel_data = processor.parse_excel_file(file_path)
+        # Parse the file first to get column info
+        file_data = processor.parse_file(file_path, company_name)
         
         # Get column mappings from LLM if enabled
         column_mappings = {}
         if standardizer and standardizer.client:
-            for sheet in excel_data.sheets:
+            for sheet in file_data.sheets:
                 try:
                     result = standardizer.standardize_columns(
-                        excel_data.schema_name,
+                        file_data.schema_name,
                         sheet.table_name,
                         sheet.columns
                     )
@@ -126,7 +128,7 @@ def process_single_file(
                     logger.error(f"Error standardizing columns for {sheet.table_name}: {e}")
         
         # Process the file with column mappings
-        result = processor.process_file(file_path, column_mappings)
+        result = processor.process_file(file_path, company_name, column_mappings)
         
         processing_time = (datetime.now() - start_time).total_seconds()
         
@@ -146,7 +148,7 @@ def process_single_file(
         processing_time = (datetime.now() - start_time).total_seconds()
         return ProcessingResult(
             file_path=file_path,
-            schema_name="",
+            schema_name=DatabaseManager.sanitize_name(company_name),
             tables_created=[],
             tables_updated=[],
             total_rows_inserted=0,
@@ -159,7 +161,7 @@ def process_single_file(
             standardizer.close()
 
 
-def process_files_background(file_paths: list[str], use_llm: bool = True):
+def process_files_background(file_paths: list[str], company_name: str, use_llm: bool = True):
     """Background task to process multiple files."""
     global app_state
     
@@ -170,7 +172,7 @@ def process_files_background(file_paths: list[str], use_llm: bool = True):
     for file_path in file_paths:
         app_state.current_file = file_path
         
-        result = process_single_file(file_path, use_llm)
+        result = process_single_file(file_path, company_name, use_llm)
         app_state.processing_results.append(result)
         
         app_state.files_in_queue -= 1
@@ -194,22 +196,29 @@ async def serve_frontend():
 async def upload_file(
     background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
-    use_llm: bool = True
+    company_name: str = Form(...),
+    use_llm: bool = Form(default=True)
 ):
     """
-    Upload and process a single Excel file.
+    Upload and process a single file (Excel or CSV).
     
     The file will be processed and imported into the database.
+    Schema will be named after the company.
+    Table names will be filename_sheetname for Excel, or filename for CSV.
     """
     # Validate file extension
     if not file.filename:
         raise HTTPException(status_code=400, detail="No filename provided")
     
+    if not company_name or not company_name.strip():
+        raise HTTPException(status_code=400, detail="Company name is required")
+    
     ext = Path(file.filename).suffix.lower()
-    if ext not in {'.xlsx', '.xls', '.xlsm'}:
+    supported_extensions = {'.xlsx', '.xls', '.xlsm', '.csv'}
+    if ext not in supported_extensions:
         raise HTTPException(
             status_code=400,
-            detail=f"Unsupported file type: {ext}. Supported: .xlsx, .xls, .xlsm"
+            detail=f"Unsupported file type: {ext}. Supported: .xlsx, .xls, .xlsm, .csv"
         )
     
     # Save uploaded file temporarily
@@ -223,7 +232,7 @@ async def upload_file(
             shutil.copyfileobj(file.file, buffer)
         
         # Process the file
-        result = process_single_file(str(temp_path), use_llm)
+        result = process_single_file(str(temp_path), company_name.strip(), use_llm)
         
         return UploadResponse(
             message=f"File processed successfully" if result.status == ProcessingStatus.COMPLETED else "File processing failed",
@@ -248,9 +257,10 @@ async def scan_folder(
     request: ScanFolderRequest = None
 ):
     """
-    Scan a folder for Excel files and process them.
+    Scan a folder for Excel and CSV files and process them.
     
     If no folder path is provided, uses the configured watch folder.
+    Company name is required for processing.
     """
     settings = get_settings()
     
@@ -258,6 +268,10 @@ async def scan_folder(
     folder_path = request.folder_path if request and request.folder_path else settings.watch_folder
     recursive = request.recursive if request else True
     dry_run = request.dry_run if request else False
+    company_name = request.company_name if request and request.company_name else None
+    
+    if not dry_run and not company_name:
+        raise HTTPException(status_code=400, detail="Company name is required for processing")
     
     # Validate folder exists
     folder = Path(folder_path)
@@ -267,19 +281,19 @@ async def scan_folder(
     if not folder.is_dir():
         raise HTTPException(status_code=400, detail=f"Path is not a directory: {folder_path}")
     
-    # Discover Excel files
-    processor = ExcelProcessor()
-    files = list(processor.discover_excel_files(str(folder), recursive))
+    # Discover files (Excel and CSV)
+    processor = FileProcessor()
+    files = list(processor.discover_files(str(folder), recursive))
     
     if dry_run:
         return ScanFolderResponse(
-            message=f"Found {len(files)} Excel file(s) (dry run)",
+            message=f"Found {len(files)} file(s) (dry run)",
             files_found=len(files),
             files_processed=0,
             results=[
                 ProcessingResult(
                     file_path=f.file_path,
-                    schema_name=DatabaseManager.sanitize_name(f.file_name),
+                    schema_name=DatabaseManager.sanitize_name(company_name) if company_name else "preview",
                     tables_created=[],
                     tables_updated=[],
                     total_rows_inserted=0,
@@ -291,7 +305,7 @@ async def scan_folder(
     
     if not files:
         return ScanFolderResponse(
-            message="No Excel files found in the specified folder",
+            message="No supported files found in the specified folder",
             files_found=0,
             files_processed=0,
             results=[]
@@ -300,7 +314,7 @@ async def scan_folder(
     # Process files
     results = []
     for file_info in files:
-        result = process_single_file(file_info.file_path)
+        result = process_single_file(file_info.file_path, company_name)
         results.append(result)
     
     successful = sum(1 for r in results if r.status == ProcessingStatus.COMPLETED)
@@ -409,8 +423,8 @@ async def get_watch_folder():
     if not folder.exists():
         folder.mkdir(parents=True, exist_ok=True)
     
-    processor = ExcelProcessor()
-    files = list(processor.discover_excel_files(str(folder), recursive=True))
+    processor = FileProcessor()
+    files = list(processor.discover_files(str(folder), recursive=True))
     
     return {
         "path": str(folder.absolute()),
@@ -466,4 +480,3 @@ async def global_exception_handler(request, exc):
         status_code=500,
         content={"error": "Internal server error", "detail": str(exc)}
     )
-

@@ -88,8 +88,9 @@ class UploadResponse(BaseModel):
 
 
 class ScanFolderRequest(BaseModel):
-    """Request to scan a folder for Excel files."""
+    """Request to scan a folder for Excel and CSV files."""
     folder_path: Optional[str] = None
+    company_name: Optional[str] = None
     recursive: bool = True
     dry_run: bool = False
 
