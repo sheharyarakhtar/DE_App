@@ -28,6 +28,16 @@ from backend.models.schemas import (
     TableInfo,
     ErrorResponse
 )
+from backend.models.kpi_schemas import (
+    KPIAnalysisRequest,
+    KPIAnalysisResponse,
+    KPIComputeRequest,
+    KPIComputeResponse,
+    KPIDefinition,
+    KPIDashboard
+)
+from backend.services.kpi_analyst import KPIAnalyst, reset_kpi_logs
+from backend.services.data_engineer import DataEngineer
 
 # Configure logging
 logging.basicConfig(
@@ -469,6 +479,162 @@ async def health_check():
         "openai_configured": bool(settings.openai_api_key),
         "watch_folder": settings.watch_folder
     }
+
+
+# ==================== KPI Endpoints ====================
+
+@app.post("/api/kpi/analyze", response_model=KPIAnalysisResponse)
+async def analyze_kpis(request: KPIAnalysisRequest):
+    """
+    Analyze a schema and suggest relevant KPIs based on the data and company context.
+    
+    Uses AI to understand the data structure and suggest meaningful KPIs.
+    """
+    analyst = KPIAnalyst()
+    try:
+        if not analyst.client:
+            # Fall back to basic KPIs if no OpenAI key
+            basic_kpis = analyst.suggest_basic_kpis(request.schema_name)
+            return KPIAnalysisResponse(
+                schema_name=request.schema_name,
+                company_name=request.company_name,
+                kpis=basic_kpis,
+                analysis_summary="Generated basic KPIs (AI not configured). Add OpenAI API key for intelligent KPI suggestions."
+            )
+        
+        return analyst.analyze(request)
+    except Exception as e:
+        logger.error(f"Error analyzing KPIs: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        analyst.close()
+
+
+@app.post("/api/kpi/suggest")
+async def suggest_kpis(
+    schema_name: str,
+    company_name: str,
+    company_description: Optional[str] = None,
+    industry: Optional[str] = None,
+    max_kpis: int = 10
+):
+    """
+    Get KPI suggestions without computing them.
+    
+    Lighter weight endpoint that just returns suggestions.
+    """
+    request = KPIAnalysisRequest(
+        schema_name=schema_name,
+        company_name=company_name,
+        company_description=company_description,
+        industry=industry,
+        max_kpis=max_kpis
+    )
+    return await analyze_kpis(request)
+
+
+@app.post("/api/kpi/compute", response_model=KPIComputeResponse)
+async def compute_kpis(request: KPIComputeRequest):
+    """
+    Compute specific KPIs.
+    
+    Takes KPI definitions and executes their SQL queries to get current values.
+    """
+    engineer = DataEngineer()
+    try:
+        return engineer.compute_kpis_with_retry(request)
+    except Exception as e:
+        logger.error(f"Error computing KPIs: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        engineer.close()
+
+
+@app.get("/api/kpi/dashboard/{schema_name}")
+async def get_kpi_dashboard(
+    schema_name: str,
+    company_name: str,
+    company_description: Optional[str] = None,
+    industry: Optional[str] = None
+):
+    """
+    Get a complete KPI dashboard for a schema.
+    
+    This is a convenience endpoint that:
+    1. Analyzes the schema and suggests KPIs
+    2. Computes all suggested KPIs
+    3. Returns the complete dashboard
+    """
+    # Reset logs for fresh dashboard generation
+    reset_kpi_logs()
+    
+    analyst = KPIAnalyst()
+    engineer = DataEngineer()
+    
+    try:
+        # Step 1: Analyze and get KPI suggestions
+        analysis_request = KPIAnalysisRequest(
+            schema_name=schema_name,
+            company_name=company_name,
+            company_description=company_description,
+            industry=industry,
+            max_kpis=10
+        )
+        
+        if analyst.client:
+            analysis = analyst.analyze(analysis_request)
+        else:
+            basic_kpis = analyst.suggest_basic_kpis(schema_name)
+            analysis = KPIAnalysisResponse(
+                schema_name=schema_name,
+                company_name=company_name,
+                kpis=basic_kpis,
+                analysis_summary="Generated basic KPIs (AI not configured)"
+            )
+        
+        # Step 2: Compute the KPIs
+        compute_request = KPIComputeRequest(
+            schema_name=schema_name,
+            kpis=analysis.kpis
+        )
+        
+        computed = engineer.compute_kpis_with_retry(compute_request)
+        
+        # Step 3: Build dashboard response
+        return KPIDashboard(
+            schema_name=schema_name,
+            company_name=company_name,
+            company_description=company_description,
+            industry=industry,
+            kpis=computed.results,
+            generated_at=analysis.generated_at,
+            last_computed_at=computed.computed_at
+        ).model_dump()
+        
+    except Exception as e:
+        logger.error(f"Error getting KPI dashboard: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        analyst.close()
+        engineer.close()
+
+
+@app.get("/api/kpi/schema-summary/{schema_name}")
+async def get_schema_summary(schema_name: str):
+    """
+    Get a summary of a schema for KPI analysis preview.
+    
+    Returns tables, columns, and row counts.
+    """
+    db_manager = DatabaseManager()
+    try:
+        summary = db_manager.get_schema_summary(schema_name)
+        return summary
+    except Exception as e:
+        logger.error(f"Error getting schema summary: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        db_manager.close()
 
 
 # Error handlers

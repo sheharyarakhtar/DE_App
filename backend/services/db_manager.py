@@ -36,7 +36,15 @@ class DatabaseManager:
                 password=self.settings.postgres_password,
                 database=self.settings.postgres_db
             )
+            # Set autocommit for read operations to avoid transaction issues
+            self._connection.autocommit = True
         return self._connection
+    
+    def _get_transactional_connection(self):
+        """Get a connection with autocommit disabled for transactional operations."""
+        conn = self._get_connection()
+        conn.autocommit = False
+        return conn
     
     def close(self):
         """Close the database connection."""
@@ -88,24 +96,27 @@ class DatabaseManager:
     
     def ensure_history_table(self):
         """Create the import history table if it doesn't exist."""
-        conn = self._get_connection()
-        with conn.cursor() as cur:
-            cur.execute(f"""
-                CREATE TABLE IF NOT EXISTS {self.HISTORY_TABLE_SCHEMA}.{self.HISTORY_TABLE_NAME} (
-                    id SERIAL PRIMARY KEY,
-                    file_name VARCHAR(500) NOT NULL,
-                    file_path VARCHAR(1000),
-                    schema_name VARCHAR(255) NOT NULL,
-                    table_name VARCHAR(255) NOT NULL,
-                    rows_inserted INTEGER DEFAULT 0,
-                    columns_standardized INTEGER DEFAULT 0,
-                    column_mappings JSONB,
-                    status VARCHAR(50) NOT NULL,
-                    error_message TEXT,
-                    processed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                )
-            """)
-            conn.commit()
+        conn = self._get_transactional_connection()
+        try:
+            with conn.cursor() as cur:
+                cur.execute(f"""
+                    CREATE TABLE IF NOT EXISTS {self.HISTORY_TABLE_SCHEMA}.{self.HISTORY_TABLE_NAME} (
+                        id SERIAL PRIMARY KEY,
+                        file_name VARCHAR(500) NOT NULL,
+                        file_path VARCHAR(1000),
+                        schema_name VARCHAR(255) NOT NULL,
+                        table_name VARCHAR(255) NOT NULL,
+                        rows_inserted INTEGER DEFAULT 0,
+                        columns_standardized INTEGER DEFAULT 0,
+                        column_mappings JSONB,
+                        status VARCHAR(50) NOT NULL,
+                        error_message TEXT,
+                        processed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    )
+                """)
+                conn.commit()
+        finally:
+            conn.autocommit = True
     
     def log_import(
         self,
@@ -121,21 +132,24 @@ class DatabaseManager:
     ):
         """Log an import operation to the history table."""
         self.ensure_history_table()
-        conn = self._get_connection()
+        conn = self._get_transactional_connection()
         
-        with conn.cursor() as cur:
-            cur.execute(
-                f"""
-                INSERT INTO {self.HISTORY_TABLE_SCHEMA}.{self.HISTORY_TABLE_NAME}
-                (file_name, file_path, schema_name, table_name, rows_inserted, 
-                 columns_standardized, column_mappings, status, error_message)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
-                """,
-                (file_name, file_path, schema_name, table_name, rows_inserted,
-                 columns_standardized, psycopg2.extras.Json(column_mappings) if column_mappings else None,
-                 status, error_message)
-            )
-            conn.commit()
+        try:
+            with conn.cursor() as cur:
+                cur.execute(
+                    f"""
+                    INSERT INTO {self.HISTORY_TABLE_SCHEMA}.{self.HISTORY_TABLE_NAME}
+                    (file_name, file_path, schema_name, table_name, rows_inserted, 
+                     columns_standardized, column_mappings, status, error_message)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    """,
+                    (file_name, file_path, schema_name, table_name, rows_inserted,
+                     columns_standardized, psycopg2.extras.Json(column_mappings) if column_mappings else None,
+                     status, error_message)
+                )
+                conn.commit()
+        finally:
+            conn.autocommit = True
     
     def get_import_history(self, limit: int = 100) -> list[dict]:
         """Get recent import history."""
@@ -160,26 +174,29 @@ class DatabaseManager:
         Returns True if schema was created, False if it already existed.
         """
         sanitized_name = self.sanitize_name(schema_name)
-        conn = self._get_connection()
+        conn = self._get_transactional_connection()
         
-        with conn.cursor() as cur:
-            # Check if schema exists
-            cur.execute(
-                "SELECT 1 FROM information_schema.schemata WHERE schema_name = %s",
-                (sanitized_name,)
-            )
-            exists = cur.fetchone() is not None
-            
-            if not exists:
+        try:
+            with conn.cursor() as cur:
+                # Check if schema exists
                 cur.execute(
-                    sql.SQL("CREATE SCHEMA {}").format(sql.Identifier(sanitized_name))
+                    "SELECT 1 FROM information_schema.schemata WHERE schema_name = %s",
+                    (sanitized_name,)
                 )
-                conn.commit()
-                logger.info(f"Created schema: {sanitized_name}")
-                return True
-            
-            logger.info(f"Schema already exists: {sanitized_name}")
-            return False
+                exists = cur.fetchone() is not None
+                
+                if not exists:
+                    cur.execute(
+                        sql.SQL("CREATE SCHEMA {}").format(sql.Identifier(sanitized_name))
+                    )
+                    conn.commit()
+                    logger.info(f"Created schema: {sanitized_name}")
+                    return True
+                
+                logger.info(f"Schema already exists: {sanitized_name}")
+                return False
+        finally:
+            conn.autocommit = True
     
     def get_table_columns(self, schema_name: str, table_name: str) -> list[dict[str, str]]:
         """Get column information for a table."""
@@ -239,36 +256,39 @@ class DatabaseManager:
             logger.info(f"Table already exists: {sanitized_schema}.{sanitized_table}")
             return False
         
-        conn = self._get_connection()
+        conn = self._get_transactional_connection()
         
-        # Build column definitions
-        col_defs = []
-        for col_name, col_type in columns.items():
-            sanitized_col = self.sanitize_name(col_name)
-            col_defs.append(
-                sql.SQL("{} {}").format(
-                    sql.Identifier(sanitized_col),
-                    sql.SQL(col_type)
+        try:
+            # Build column definitions
+            col_defs = []
+            for col_name, col_type in columns.items():
+                sanitized_col = self.sanitize_name(col_name)
+                col_defs.append(
+                    sql.SQL("{} {}").format(
+                        sql.Identifier(sanitized_col),
+                        sql.SQL(col_type)
+                    )
                 )
-            )
-        
-        # Add auto-increment ID column
-        col_defs.insert(0, sql.SQL("_de_row_id SERIAL PRIMARY KEY"))
-        
-        # Add import timestamp column
-        col_defs.append(sql.SQL("_de_imported_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP"))
-        
-        with conn.cursor() as cur:
-            create_query = sql.SQL("CREATE TABLE {}.{} ({})").format(
-                sql.Identifier(sanitized_schema),
-                sql.Identifier(sanitized_table),
-                sql.SQL(", ").join(col_defs)
-            )
-            cur.execute(create_query)
-            conn.commit()
-        
-        logger.info(f"Created table: {sanitized_schema}.{sanitized_table}")
-        return True
+            
+            # Add auto-increment ID column
+            col_defs.insert(0, sql.SQL("_de_row_id SERIAL PRIMARY KEY"))
+            
+            # Add import timestamp column
+            col_defs.append(sql.SQL("_de_imported_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP"))
+            
+            with conn.cursor() as cur:
+                create_query = sql.SQL("CREATE TABLE {}.{} ({})").format(
+                    sql.Identifier(sanitized_schema),
+                    sql.Identifier(sanitized_table),
+                    sql.SQL(", ").join(col_defs)
+                )
+                cur.execute(create_query)
+                conn.commit()
+            
+            logger.info(f"Created table: {sanitized_schema}.{sanitized_table}")
+            return True
+        finally:
+            conn.autocommit = True
     
     def add_columns(
         self,
@@ -279,24 +299,27 @@ class DatabaseManager:
         """Add new columns to an existing table."""
         sanitized_schema = self.sanitize_name(schema_name)
         sanitized_table = self.sanitize_name(table_name)
-        conn = self._get_connection()
+        conn = self._get_transactional_connection()
         
-        existing_cols = {col['column_name'] for col in self.get_table_columns(schema_name, table_name)}
-        
-        with conn.cursor() as cur:
-            for col_name, col_type in new_columns.items():
-                sanitized_col = self.sanitize_name(col_name)
-                if sanitized_col not in existing_cols:
-                    alter_query = sql.SQL("ALTER TABLE {}.{} ADD COLUMN {} {}").format(
-                        sql.Identifier(sanitized_schema),
-                        sql.Identifier(sanitized_table),
-                        sql.Identifier(sanitized_col),
-                        sql.SQL(col_type)
-                    )
-                    cur.execute(alter_query)
-                    logger.info(f"Added column {sanitized_col} to {sanitized_schema}.{sanitized_table}")
+        try:
+            existing_cols = {col['column_name'] for col in self.get_table_columns(schema_name, table_name)}
             
-            conn.commit()
+            with conn.cursor() as cur:
+                for col_name, col_type in new_columns.items():
+                    sanitized_col = self.sanitize_name(col_name)
+                    if sanitized_col not in existing_cols:
+                        alter_query = sql.SQL("ALTER TABLE {}.{} ADD COLUMN {} {}").format(
+                            sql.Identifier(sanitized_schema),
+                            sql.Identifier(sanitized_table),
+                            sql.Identifier(sanitized_col),
+                            sql.SQL(col_type)
+                        )
+                        cur.execute(alter_query)
+                        logger.info(f"Added column {sanitized_col} to {sanitized_schema}.{sanitized_table}")
+                
+                conn.commit()
+        finally:
+            conn.autocommit = True
     
     def insert_data(
         self,
@@ -324,26 +347,29 @@ class DatabaseManager:
         sanitized_table = self.sanitize_name(table_name)
         sanitized_cols = [self.sanitize_name(col) for col in columns]
         
-        conn = self._get_connection()
+        conn = self._get_transactional_connection()
         
-        # Build the INSERT query
-        col_identifiers = sql.SQL(", ").join([sql.Identifier(col) for col in sanitized_cols])
-        
-        insert_query = sql.SQL("INSERT INTO {}.{} ({}) VALUES %s").format(
-            sql.Identifier(sanitized_schema),
-            sql.Identifier(sanitized_table),
-            col_identifiers
-        )
-        
-        with conn.cursor() as cur:
-            # Convert data to tuples
-            tuple_data = [tuple(row) for row in data]
-            execute_values(cur, insert_query.as_string(conn), tuple_data)
-            rows_inserted = cur.rowcount
-            conn.commit()
-        
-        logger.info(f"Inserted {rows_inserted} rows into {sanitized_schema}.{sanitized_table}")
-        return rows_inserted
+        try:
+            # Build the INSERT query
+            col_identifiers = sql.SQL(", ").join([sql.Identifier(col) for col in sanitized_cols])
+            
+            insert_query = sql.SQL("INSERT INTO {}.{} ({}) VALUES %s").format(
+                sql.Identifier(sanitized_schema),
+                sql.Identifier(sanitized_table),
+                col_identifiers
+            )
+            
+            with conn.cursor() as cur:
+                # Convert data to tuples
+                tuple_data = [tuple(row) for row in data]
+                execute_values(cur, insert_query.as_string(conn), tuple_data)
+                rows_inserted = cur.rowcount
+                conn.commit()
+            
+            logger.info(f"Inserted {rows_inserted} rows into {sanitized_schema}.{sanitized_table}")
+            return rows_inserted
+        finally:
+            conn.autocommit = True
     
     def get_all_schemas(self) -> list[str]:
         """Get all user-created schemas (excluding system schemas)."""
@@ -357,7 +383,8 @@ class DatabaseManager:
                 AND schema_name NOT LIKE 'pg_%'
                 ORDER BY schema_name
             """)
-            return [row[0] for row in cur.fetchall()]
+            rows = cur.fetchall()
+            return [row[0] for row in rows if row]
     
     def get_schema_tables(self, schema_name: str) -> list[str]:
         """Get all tables in a schema."""
@@ -374,7 +401,8 @@ class DatabaseManager:
                 """,
                 (sanitized_schema,)
             )
-            return [row[0] for row in cur.fetchall()]
+            rows = cur.fetchall()
+            return [row[0] for row in rows if row]
     
     def get_table_row_count(self, schema_name: str, table_name: str) -> int:
         """Get the row count for a table."""
@@ -400,25 +428,31 @@ class DatabaseManager:
         sanitized_schema = self.sanitize_name(schema_name)
         conn = self._get_connection()
         
+        result = {}
         with conn.cursor() as cur:
             cur.execute(
                 """
                 SELECT table_name, column_name
                 FROM information_schema.columns
                 WHERE table_schema = %s
-                AND column_name NOT LIKE '_de_%'
+                AND column_name NOT LIKE '_de_%%'
                 ORDER BY table_name, ordinal_position
                 """,
                 (sanitized_schema,)
             )
             
-            result = {}
-            for table_name, column_name in cur.fetchall():
-                if table_name not in result:
-                    result[table_name] = []
-                result[table_name].append(column_name)
+            rows = cur.fetchall()
+            if not rows:
+                return result
             
-            return result
+            for row in rows:
+                if len(row) >= 2:
+                    table_name, column_name = row[0], row[1]
+                    if table_name not in result:
+                        result[table_name] = []
+                    result[table_name].append(column_name)
+            
+        return result
     
     def infer_postgres_type(self, values: list[Any]) -> str:
         """
@@ -485,4 +519,293 @@ class DatabaseManager:
         # Default to TEXT for safety - VARCHAR can cause issues with variable length data
         # TEXT has no length limit and performs similarly in PostgreSQL
         return "TEXT"
+    
+    # ==================== KPI Agent Tools ====================
+    
+    def get_schema_summary(self, schema_name: str) -> dict:
+        """
+        Get a comprehensive summary of a schema for KPI analysis.
+        
+        Returns tables, columns with types, row counts, and basic stats.
+        """
+        sanitized_schema = self.sanitize_name(schema_name)
+        conn = self._get_connection()
+        
+        summary = {
+            "schema_name": sanitized_schema,
+            "tables": []
+        }
+        
+        # Get all tables
+        tables = self.get_schema_tables(schema_name)
+        
+        for table in tables:
+            # Skip internal tables
+            if table.startswith('_de_'):
+                continue
+                
+            table_info = {
+                "table_name": table,
+                "columns": [],
+                "row_count": 0
+            }
+            
+            # Get row count
+            try:
+                table_info["row_count"] = self.get_table_row_count(schema_name, table)
+            except Exception:
+                table_info["row_count"] = 0
+            
+            # Get columns with types
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                cur.execute(
+                    """
+                    SELECT column_name, data_type, is_nullable
+                    FROM information_schema.columns
+                    WHERE table_schema = %s AND table_name = %s
+                    AND column_name NOT LIKE '_de_%%'
+                    ORDER BY ordinal_position
+                    """,
+                    (sanitized_schema, table)
+                )
+                table_info["columns"] = [dict(row) for row in cur.fetchall()]
+            
+            summary["tables"].append(table_info)
+        
+        return summary
+    
+    def get_sample_data(
+        self, 
+        schema_name: str, 
+        table_name: str, 
+        limit: int = 5
+    ) -> list[dict]:
+        """
+        Get sample rows from a table for understanding data structure.
+        
+        Args:
+            schema_name: Name of the schema
+            table_name: Name of the table
+            limit: Number of rows to return (default 5)
+            
+        Returns:
+            List of dictionaries representing rows
+        """
+        sanitized_schema = self.sanitize_name(schema_name)
+        sanitized_table = self.sanitize_name(table_name)
+        conn = self._get_connection()
+        
+        # Get columns excluding internal ones
+        columns = []
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT column_name
+                FROM information_schema.columns
+                WHERE table_schema = %s AND table_name = %s
+                AND column_name NOT LIKE '_de_%%'
+                ORDER BY ordinal_position
+                """,
+                (sanitized_schema, sanitized_table)
+            )
+            rows = cur.fetchall()
+            columns = [row[0] for row in rows if row]
+        
+        if not columns:
+            return []
+        
+        # Build safe column list
+        col_sql = sql.SQL(", ").join([sql.Identifier(col) for col in columns])
+        
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            query = sql.SQL("SELECT {} FROM {}.{} LIMIT %s").format(
+                col_sql,
+                sql.Identifier(sanitized_schema),
+                sql.Identifier(sanitized_table)
+            )
+            cur.execute(query, (limit,))
+            rows = [dict(row) for row in cur.fetchall()]
+            
+            # Convert any non-serializable types to strings
+            for row in rows:
+                for key, value in row.items():
+                    if isinstance(value, (datetime,)):
+                        row[key] = value.isoformat()
+                    elif value is not None and not isinstance(value, (str, int, float, bool)):
+                        row[key] = str(value)
+            
+            return rows
+    
+    def execute_read_query(self, query: str, schema_name: str = None) -> dict:
+        """
+        Execute a read-only SQL query safely.
+        
+        Args:
+            query: SQL query (must be SELECT)
+            schema_name: Optional schema to set as search path
+            
+        Returns:
+            Dictionary with columns and rows
+        """
+        # Security: Only allow SELECT statements
+        query_stripped = query.strip().upper()
+        if not query_stripped.startswith('SELECT'):
+            raise ValueError("Only SELECT queries are allowed")
+        
+        # Check for dangerous keywords
+        dangerous_keywords = ['INSERT', 'UPDATE', 'DELETE', 'DROP', 'CREATE', 'ALTER', 'TRUNCATE', 'GRANT', 'REVOKE']
+        for keyword in dangerous_keywords:
+            if keyword in query_stripped:
+                raise ValueError(f"Query contains forbidden keyword: {keyword}")
+        
+        conn = self._get_connection()
+        
+        try:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                # Set search path if schema provided
+                if schema_name:
+                    sanitized_schema = self.sanitize_name(schema_name)
+                    cur.execute(sql.SQL("SET search_path TO {}").format(
+                        sql.Identifier(sanitized_schema)
+                    ))
+                
+                cur.execute(query)
+                
+                # Get column names
+                columns = [desc[0] for desc in cur.description] if cur.description else []
+                
+                # Fetch results (limit to prevent memory issues)
+                rows = cur.fetchmany(1000)
+                rows = [dict(row) for row in rows]
+                
+                # Convert non-serializable types
+                for row in rows:
+                    for key, value in row.items():
+                        if isinstance(value, (datetime,)):
+                            row[key] = value.isoformat()
+                        elif value is not None and not isinstance(value, (str, int, float, bool)):
+                            row[key] = str(value)
+                
+                return {
+                    "columns": columns,
+                    "rows": rows,
+                    "row_count": len(rows)
+                }
+        except Exception as e:
+            raise ValueError(f"Query execution failed: {str(e)}")
+    
+    def get_column_statistics(
+        self, 
+        schema_name: str, 
+        table_name: str, 
+        column_name: str
+    ) -> dict:
+        """
+        Get statistics for a specific column.
+        
+        Returns min, max, avg (for numeric), distinct count, null count.
+        """
+        sanitized_schema = self.sanitize_name(schema_name)
+        sanitized_table = self.sanitize_name(table_name)
+        sanitized_column = self.sanitize_name(column_name)
+        conn = self._get_connection()
+        
+        stats = {
+            "column_name": column_name,
+            "distinct_count": 0,
+            "null_count": 0,
+            "total_count": 0
+        }
+        
+        with conn.cursor() as cur:
+            # Get basic counts
+            query = sql.SQL("""
+                SELECT 
+                    COUNT(*) as total,
+                    COUNT(DISTINCT {col}) as distinct_count,
+                    COUNT(*) - COUNT({col}) as null_count
+                FROM {schema}.{table}
+            """).format(
+                col=sql.Identifier(sanitized_column),
+                schema=sql.Identifier(sanitized_schema),
+                table=sql.Identifier(sanitized_table)
+            )
+            cur.execute(query)
+            row = cur.fetchone()
+            stats["total_count"] = row[0]
+            stats["distinct_count"] = row[1]
+            stats["null_count"] = row[2]
+            
+            # Try to get numeric stats
+            try:
+                query = sql.SQL("""
+                    SELECT 
+                        MIN({col}::numeric) as min_val,
+                        MAX({col}::numeric) as max_val,
+                        AVG({col}::numeric) as avg_val,
+                        SUM({col}::numeric) as sum_val
+                    FROM {schema}.{table}
+                    WHERE {col} IS NOT NULL
+                """).format(
+                    col=sql.Identifier(sanitized_column),
+                    schema=sql.Identifier(sanitized_schema),
+                    table=sql.Identifier(sanitized_table)
+                )
+                cur.execute(query)
+                row = cur.fetchone()
+                if row and row[0] is not None:
+                    stats["min"] = float(row[0]) if row[0] else None
+                    stats["max"] = float(row[1]) if row[1] else None
+                    stats["avg"] = float(row[2]) if row[2] else None
+                    stats["sum"] = float(row[3]) if row[3] else None
+                    stats["is_numeric"] = True
+            except Exception:
+                stats["is_numeric"] = False
+            
+            # Get top values for non-numeric columns
+            if not stats.get("is_numeric", False):
+                try:
+                    query = sql.SQL("""
+                        SELECT {col}, COUNT(*) as freq
+                        FROM {schema}.{table}
+                        WHERE {col} IS NOT NULL
+                        GROUP BY {col}
+                        ORDER BY freq DESC
+                        LIMIT 5
+                    """).format(
+                        col=sql.Identifier(sanitized_column),
+                        schema=sql.Identifier(sanitized_schema),
+                        table=sql.Identifier(sanitized_table)
+                    )
+                    cur.execute(query)
+                    stats["top_values"] = [
+                        {"value": str(row[0]), "count": row[1]} 
+                        for row in cur.fetchall()
+                    ]
+                except Exception:
+                    pass
+        
+        return stats
+    
+    def get_schema_for_llm(self, schema_name: str) -> str:
+        """
+        Get a text representation of the schema suitable for LLM context.
+        
+        Returns a formatted string describing all tables and columns.
+        """
+        summary = self.get_schema_summary(schema_name)
+        
+        lines = [f"Database Schema: {summary['schema_name']}", "=" * 50, ""]
+        
+        for table in summary["tables"]:
+            lines.append(f"Table: {table['table_name']} ({table['row_count']} rows)")
+            lines.append("-" * 40)
+            
+            for col in table["columns"]:
+                nullable = "NULL" if col["is_nullable"] == "YES" else "NOT NULL"
+                lines.append(f"  - {col['column_name']}: {col['data_type']} ({nullable})")
+            
+            lines.append("")
+        
+        return "\n".join(lines)
 

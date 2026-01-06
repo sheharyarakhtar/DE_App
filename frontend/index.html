@@ -752,6 +752,222 @@
         /* Utility */
         .mb-1 { margin-bottom: 1rem; }
         .mt-1 { margin-top: 1rem; }
+
+        /* ==================== KPI Dashboard Styles ==================== */
+        
+        .kpi-section {
+            margin-top: 2rem;
+            padding-top: 2rem;
+            border-top: 2px solid var(--border-color);
+        }
+
+        .kpi-section-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1.5rem;
+        }
+
+        .kpi-section-title {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .kpi-section-title h2 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            background: linear-gradient(135deg, var(--accent-orange), var(--accent-red));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .kpi-section-title .icon {
+            font-size: 1.75rem;
+        }
+
+        .kpi-config {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .kpi-config-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        @media (max-width: 900px) {
+            .kpi-config-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .kpi-config-field label {
+            display: block;
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .kpi-config-field input,
+        .kpi-config-field select,
+        .kpi-config-field textarea {
+            width: 100%;
+            padding: 0.75rem;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 0.95rem;
+        }
+
+        .kpi-config-field textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .kpi-config-field input:focus,
+        .kpi-config-field select:focus,
+        .kpi-config-field textarea:focus {
+            outline: none;
+            border-color: var(--accent-orange);
+        }
+
+        .kpi-dashboard {
+            display: none;
+        }
+
+        .kpi-dashboard.visible {
+            display: block;
+        }
+
+        .kpi-summary {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1rem 1.5rem;
+            margin-bottom: 1.5rem;
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+        }
+
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1rem;
+        }
+
+        .kpi-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.25rem;
+            transition: all 0.2s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .kpi-card:hover {
+            border-color: var(--accent-orange);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(210, 153, 34, 0.15);
+        }
+
+        .kpi-card.error {
+            border-color: var(--accent-red);
+            opacity: 0.7;
+        }
+
+        .kpi-card-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            margin-bottom: 0.75rem;
+        }
+
+        .kpi-name {
+            font-weight: 600;
+            font-size: 0.95rem;
+            color: var(--text-primary);
+        }
+
+        .kpi-category {
+            font-size: 0.7rem;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            text-transform: uppercase;
+            font-weight: 500;
+        }
+
+        .kpi-category.financial { background: rgba(63, 185, 80, 0.2); color: var(--accent-green); }
+        .kpi-category.operational { background: rgba(88, 166, 255, 0.2); color: var(--accent-blue); }
+        .kpi-category.customer { background: rgba(163, 113, 247, 0.2); color: var(--accent-purple); }
+        .kpi-category.product { background: rgba(210, 153, 34, 0.2); color: var(--accent-orange); }
+        .kpi-category.performance { background: rgba(57, 197, 207, 0.2); color: var(--accent-cyan); }
+        .kpi-category.growth { background: rgba(63, 185, 80, 0.2); color: var(--accent-green); }
+        .kpi-category.quality { background: rgba(163, 113, 247, 0.2); color: var(--accent-purple); }
+        .kpi-category.other { background: rgba(139, 148, 158, 0.2); color: var(--text-secondary); }
+
+        .kpi-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--accent-cyan);
+            margin-bottom: 0.5rem;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .kpi-value.error {
+            color: var(--accent-red);
+            font-size: 1rem;
+        }
+
+        .kpi-description {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            line-height: 1.4;
+        }
+
+        .kpi-importance {
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 4px;
+            height: 100%;
+        }
+
+        .kpi-importance.high { background: var(--accent-green); }
+        .kpi-importance.medium { background: var(--accent-orange); }
+        .kpi-importance.low { background: var(--text-muted); }
+
+        .kpi-loading {
+            text-align: center;
+            padding: 3rem;
+            color: var(--text-muted);
+        }
+
+        .kpi-loading .spinner {
+            width: 40px;
+            height: 40px;
+            margin: 0 auto 1rem;
+            border-width: 3px;
+        }
+
+        .btn-kpi {
+            background: linear-gradient(135deg, var(--accent-orange), #e3b341);
+            color: var(--bg-primary);
+            font-weight: 600;
+        }
+
+        .btn-kpi:hover {
+            box-shadow: 0 4px 12px rgba(210, 153, 34, 0.4);
+        }
     </style>
 </head>
 <body>
@@ -872,6 +1088,65 @@
                 <button class="results-close" id="closeResultsBtn">×</button>
             </div>
             <div id="resultsContent"></div>
+        </div>
+
+        <!-- KPI Dashboard Section -->
+        <div class="kpi-section">
+            <div class="kpi-section-header">
+                <div class="kpi-section-title">
+                    <span class="icon">📊</span>
+                    <h2>KPI Analytics Dashboard</h2>
+                </div>
+            </div>
+
+            <!-- KPI Configuration -->
+            <div class="kpi-config">
+                <div class="kpi-config-grid">
+                    <div class="kpi-config-field">
+                        <label>Select Schema</label>
+                        <select id="kpiSchemaSelect">
+                            <option value="">-- Select a schema --</option>
+                        </select>
+                    </div>
+                    <div class="kpi-config-field">
+                        <label>Industry (Optional)</label>
+                        <select id="kpiIndustrySelect">
+                            <option value="">-- Select industry --</option>
+                            <option value="ecommerce">E-commerce / Retail</option>
+                            <option value="saas">SaaS / Software</option>
+                            <option value="finance">Finance / Banking</option>
+                            <option value="healthcare">Healthcare</option>
+                            <option value="manufacturing">Manufacturing</option>
+                            <option value="services">Professional Services</option>
+                            <option value="education">Education</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                    <div class="kpi-config-field">
+                        <label>&nbsp;</label>
+                        <button class="btn btn-kpi" id="generateKpisBtn" style="width: 100%;">
+                            🚀 Generate KPIs
+                        </button>
+                    </div>
+                </div>
+                <div class="kpi-config-field">
+                    <label>Company Description (Optional - helps AI suggest better KPIs)</label>
+                    <textarea id="kpiCompanyDescription" placeholder="Describe what your company does, your main products/services, target customers, etc."></textarea>
+                </div>
+            </div>
+
+            <!-- KPI Dashboard Content -->
+            <div class="kpi-dashboard" id="kpiDashboard">
+                <div class="kpi-summary" id="kpiSummary"></div>
+                <div class="kpi-grid" id="kpiGrid"></div>
+            </div>
+
+            <!-- KPI Loading State -->
+            <div class="kpi-loading" id="kpiLoading" style="display: none;">
+                <div class="spinner"></div>
+                <div>Analyzing your data and generating KPIs...</div>
+                <div style="font-size: 0.85rem; margin-top: 0.5rem;">This may take a moment</div>
+            </div>
         </div>
     </div>
 
@@ -1236,6 +1511,176 @@
 
             resultsPanel.classList.add('visible');
         }
+
+        // ==================== KPI Dashboard Functions ====================
+        
+        // KPI DOM Elements
+        const kpiSchemaSelect = document.getElementById('kpiSchemaSelect');
+        const kpiIndustrySelect = document.getElementById('kpiIndustrySelect');
+        const kpiCompanyDescription = document.getElementById('kpiCompanyDescription');
+        const generateKpisBtn = document.getElementById('generateKpisBtn');
+        const kpiDashboard = document.getElementById('kpiDashboard');
+        const kpiSummary = document.getElementById('kpiSummary');
+        const kpiGrid = document.getElementById('kpiGrid');
+        const kpiLoading = document.getElementById('kpiLoading');
+
+        // Populate KPI schema dropdown when schemas are loaded
+        function populateKpiSchemaSelect(schemas) {
+            kpiSchemaSelect.innerHTML = '<option value="">-- Select a schema --</option>';
+            schemas.forEach(schema => {
+                if (!schema.schema_name.startsWith('_') && schema.schema_name !== 'public') {
+                    const option = document.createElement('option');
+                    option.value = schema.schema_name;
+                    option.textContent = `${schema.schema_name} (${schema.tables.length} tables, ${schema.total_rows.toLocaleString()} rows)`;
+                    kpiSchemaSelect.appendChild(option);
+                }
+            });
+        }
+
+        // Generate KPIs button handler
+        generateKpisBtn.addEventListener('click', generateKpis);
+
+        async function generateKpis() {
+            const schemaName = kpiSchemaSelect.value;
+            if (!schemaName) {
+                alert('Please select a schema first');
+                return;
+            }
+
+            const companyName = companyNameInput.value.trim() || schemaName;
+            const industry = kpiIndustrySelect.value || null;
+            const description = kpiCompanyDescription.value.trim() || null;
+
+            // Show loading state
+            kpiLoading.style.display = 'block';
+            kpiDashboard.classList.remove('visible');
+            generateKpisBtn.disabled = true;
+            setStatus('processing', 'Generating KPIs...');
+
+            try {
+                // Build URL with query params
+                let url = `${API_BASE}/api/kpi/dashboard/${encodeURIComponent(schemaName)}?company_name=${encodeURIComponent(companyName)}`;
+                if (industry) url += `&industry=${encodeURIComponent(industry)}`;
+                if (description) url += `&company_description=${encodeURIComponent(description)}`;
+
+                const response = await fetch(url);
+                const data = await response.json();
+
+                if (response.ok) {
+                    displayKpiDashboard(data);
+                    setStatus('ready', 'KPIs generated successfully');
+                } else {
+                    throw new Error(data.detail || 'Failed to generate KPIs');
+                }
+            } catch (error) {
+                console.error('Error generating KPIs:', error);
+                setStatus('ready', `Error: ${error.message}`);
+                kpiGrid.innerHTML = `
+                    <div class="empty-state" style="grid-column: 1 / -1;">
+                        <div class="empty-state-icon">❌</div>
+                        <div>Failed to generate KPIs: ${error.message}</div>
+                    </div>
+                `;
+                kpiDashboard.classList.add('visible');
+            } finally {
+                kpiLoading.style.display = 'none';
+                generateKpisBtn.disabled = false;
+            }
+        }
+
+        function displayKpiDashboard(data) {
+            // Show summary
+            const successCount = data.kpis.filter(k => !k.error).length;
+            const errorCount = data.kpis.filter(k => k.error).length;
+            
+            kpiSummary.innerHTML = `
+                <strong>📈 ${data.company_name}</strong> ${data.industry ? `· ${data.industry}` : ''} 
+                · ${successCount} KPIs computed ${errorCount > 0 ? `· ${errorCount} errors` : ''}
+                · Generated at ${new Date(data.generated_at).toLocaleString()}
+            `;
+
+            // Display KPI cards
+            if (data.kpis && data.kpis.length > 0) {
+                kpiGrid.innerHTML = data.kpis.map(kpi => createKpiCard(kpi)).join('');
+            } else {
+                kpiGrid.innerHTML = `
+                    <div class="empty-state" style="grid-column: 1 / -1;">
+                        <div class="empty-state-icon">📊</div>
+                        <div>No KPIs could be generated for this schema</div>
+                    </div>
+                `;
+            }
+
+            kpiDashboard.classList.add('visible');
+        }
+
+        function createKpiCard(kpi) {
+            const hasError = !!kpi.error;
+            const category = kpi.category || 'other';
+            const importance = kpi.importance || 'medium';
+
+            return `
+                <div class="kpi-card ${hasError ? 'error' : ''}">
+                    <div class="kpi-importance ${importance}"></div>
+                    <div class="kpi-card-header">
+                        <span class="kpi-name">${escapeHtml(kpi.name)}</span>
+                        <span class="kpi-category ${category}">${category}</span>
+                    </div>
+                    <div class="kpi-value ${hasError ? 'error' : ''}">
+                        ${hasError ? '⚠️ Error' : escapeHtml(kpi.formatted_value || 'N/A')}
+                    </div>
+                    <div class="kpi-description">
+                        ${hasError ? escapeHtml(kpi.error) : escapeHtml(kpi.description)}
+                    </div>
+                </div>
+            `;
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Update loadSchemas to also populate KPI select
+        const originalLoadSchemas = loadSchemas;
+        loadSchemas = async function() {
+            try {
+                const response = await fetch(`${API_BASE}/api/schemas`);
+                const data = await response.json();
+
+                if (data.schemas && data.schemas.length > 0) {
+                    // Populate KPI schema select
+                    populateKpiSchemaSelect(data.schemas);
+
+                    schemaList.innerHTML = data.schemas.map((schema, idx) => `
+                        <div class="schema-item" id="schema-${idx}">
+                            <div class="schema-item-header" onclick="toggleSchema(${idx})">
+                                <span class="schema-toggle">▶</span>
+                                <span class="schema-name">${schema.schema_name}</span>
+                                <span class="schema-badge">${schema.tables.length} tables</span>
+                            </div>
+                            <div class="schema-tables">
+                                ${schema.tables.map(table => `
+                                    <div class="schema-table">${table}</div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    schemaList.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-state-icon">📦</div>
+                            <div>No schemas found</div>
+                        </div>
+                    `;
+                    kpiSchemaSelect.innerHTML = '<option value="">-- No schemas available --</option>';
+                }
+            } catch (error) {
+                console.error('Error loading schemas:', error);
+            }
+        };
 
         // Initial load
         document.addEventListener('DOMContentLoaded', () => {
