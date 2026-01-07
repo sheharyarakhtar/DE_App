@@ -1,4 +1,4 @@
-# Data Platform for Small Businesses
+# DataFlow - Data Platform for Small Businesses
 
 A Python web application that helps small companies transform their Excel/CSV data into a structured PostgreSQL database, then automatically generates AI-powered KPI dashboards tailored to their business.
 
@@ -18,11 +18,12 @@ A Python web application that helps small companies transform their Excel/CSV da
 - **KPI Analyst Agent**: Analyzes your database schema and company context to suggest relevant, actionable KPIs
   - Industry-aware suggestions (ecommerce, SaaS, finance, healthcare, manufacturing, services, education)
   - Uses company description to focus on metrics that matter to YOUR business
+  - **Table-level filtering**: Analyze all tables or focus on a specific table
   - Explores data with tools: schema summary, sample data, column statistics
 - **Data Engineer Agent**: Executes KPI queries safely and computes values
   - SQL query validation (only SELECT statements allowed)
   - Automatic query fixing with LLM when errors occur
-  - Proper value formatting (percentages, currency, large numbers)
+  - Proper value formatting (percentages, currency, large numbers with K/M suffixes)
 - **KPI Dashboard**: Visual dashboard displaying all computed KPIs with categories and importance levels
 
 ### 🔧 Developer Features
@@ -30,7 +31,7 @@ A Python web application that helps small companies transform their Excel/CSV da
   - `kpi_analysis.log` - Full prompts, tool calls, and LLM responses
   - `kpi_computation.log` - Query execution details and results
   - Logs reset on each new dashboard generation
-- **Web UI**: Modern interface for uploading files, configuring company info, and viewing KPI dashboards
+- **Tab-Based Web UI**: Modern interface with separate tabs for Data Ingestion and KPI Analytics
 
 ## Quick Start
 
@@ -73,7 +74,11 @@ A Python web application that helps small companies transform their Excel/CSV da
 
 ## Usage
 
-### Step 1: Import Your Data
+The application has two main tabs:
+
+### Tab 1: Data Ingestion
+
+**Import Your Data**
 
 **Option A: Web Upload**
 1. Enter your company name in the input field
@@ -85,16 +90,23 @@ A Python web application that helps small companies transform their Excel/CSV da
 2. Enter company name and click "Scan & Process"
 3. All files (including in subdirectories) will be processed
 
-### Step 2: Generate KPI Dashboard
+**View Your Data**
+- **Database Schemas**: See all schemas and their tables
+- **Import History**: Track all file imports with status and row counts
 
-1. Navigate to the **KPI Dashboard** section
-2. Select your schema (company) from the dropdown
-3. Fill in:
+### Tab 2: KPI Analytics
+
+**Generate KPI Dashboard**
+
+1. Switch to the **KPI Analytics** tab
+2. Configure your analysis:
+   - **Select Schema**: Choose your company's schema
+   - **Select Table** (Optional): Analyze all tables or focus on a specific one
+   - **Industry**: Select your industry for better KPI suggestions
    - **Company Name**: Your business name
-   - **Industry**: Select from dropdown (ecommerce, SaaS, finance, etc.)
    - **Description**: Describe what your company does - this helps the AI suggest relevant KPIs
-4. Click **Generate KPIs**
-5. View your personalized KPI dashboard with computed values
+3. Click **Generate KPIs**
+4. View your personalized KPI dashboard with computed values
 
 ## How It Works
 
@@ -115,8 +127,8 @@ A Python web application that helps small companies transform their Excel/CSV da
 ┌─────────────────┐     ┌──────────────────┐     ┌─────────────────┐
 │  Company Info   │ ──▶ │  KPI Analyst     │ ──▶ │  Data Engineer  │
 │  + Schema Data  │     │  (suggests KPIs) │     │  (computes KPIs)│
-└─────────────────┘     └──────────────────┘     └─────────────────┘
-                                                          │
+│  + Table Filter │     └──────────────────┘     └─────────────────┘
+└─────────────────┘                                       │
                                                           ▼
                                                  ┌─────────────────┐
                                                  │  KPI Dashboard  │
@@ -125,9 +137,10 @@ A Python web application that helps small companies transform their Excel/CSV da
 ```
 
 1. **KPI Analyst Agent** receives company info and explores the database using tools
-2. Based on industry context and company description, suggests 5-10 relevant KPIs
-3. **Data Engineer Agent** validates and executes each SQL query
-4. Results are formatted and displayed in the dashboard
+2. If a specific table is selected, analysis is scoped to that table only
+3. Based on industry context and company description, suggests 5-10 relevant KPIs
+4. **Data Engineer Agent** validates and executes each SQL query
+5. Results are formatted and displayed in the dashboard
 
 ### Conflict Resolution (Data Import)
 
@@ -161,7 +174,7 @@ A Python web application that helps small companies transform their Excel/CSV da
 | `/api/kpi/analyze` | POST | Analyze schema and suggest KPIs |
 | `/api/kpi/suggest` | POST | Get basic KPI suggestions (no LLM) |
 | `/api/kpi/compute` | POST | Compute values for given KPIs |
-| `/api/kpi/dashboard/{schema}` | GET | Full dashboard: analyze + compute |
+| `/api/kpi/dashboard/{schema}` | GET | Full dashboard: analyze + compute (supports `table_name` query param) |
 | `/api/kpi/schema-summary/{schema}` | GET | Get schema summary for preview |
 
 ## Project Structure
@@ -182,7 +195,7 @@ DE_App/
 │       ├── schemas.py             # Data import Pydantic models
 │       └── kpi_schemas.py         # KPI Pydantic models
 ├── frontend/
-│   └── index.html                 # Web UI
+│   └── index.html                 # Web UI (Tab-based: Data Ingestion + KPI Analytics)
 ├── logs/                          # KPI analysis logs (gitignored)
 │   ├── kpi_analysis.log
 │   └── kpi_computation.log
