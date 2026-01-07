@@ -3,28 +3,52 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Data → PostgreSQL Converter</title>
+    <title>DataFlow | Data Platform</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg-primary: #0d1117;
-            --bg-secondary: #161b22;
-            --bg-tertiary: #21262d;
-            --border-color: #30363d;
-            --text-primary: #e6edf3;
-            --text-secondary: #8b949e;
-            --text-muted: #6e7681;
-            --accent-green: #3fb950;
-            --accent-green-dim: #238636;
-            --accent-blue: #58a6ff;
-            --accent-purple: #a371f7;
-            --accent-orange: #d29922;
-            --accent-red: #f85149;
-            --accent-cyan: #39c5cf;
-            --gradient-start: #1a1f35;
-            --gradient-end: #0d1117;
+            /* Brand Colors - Navy/Teal/Amber */
+            --navy-900: #0f172a;
+            --navy-800: #1e293b;
+            --navy-700: #334155;
+            --navy-600: #475569;
+            --navy-500: #64748b;
+            
+            --teal-500: #14b8a6;
+            --teal-400: #2dd4bf;
+            --teal-600: #0d9488;
+            
+            --amber-500: #f59e0b;
+            --amber-400: #fbbf24;
+            --amber-600: #d97706;
+            
+            /* Semantic Colors */
+            --bg-primary: var(--navy-900);
+            --bg-secondary: var(--navy-800);
+            --bg-tertiary: var(--navy-700);
+            --border-color: var(--navy-600);
+            --border-light: var(--navy-500);
+            
+            --text-primary: #f8fafc;
+            --text-secondary: #cbd5e1;
+            --text-muted: #94a3b8;
+            
+            --accent-primary: var(--teal-500);
+            --accent-primary-hover: var(--teal-400);
+            --accent-secondary: var(--amber-500);
+            --accent-secondary-hover: var(--amber-400);
+            
+            --success: #22c55e;
+            --warning: var(--amber-500);
+            --error: #ef4444;
+            --info: #3b82f6;
+            
+            /* Gradients */
+            --gradient-brand: linear-gradient(135deg, var(--teal-500), var(--teal-600));
+            --gradient-accent: linear-gradient(135deg, var(--amber-500), var(--amber-600));
+            --gradient-bg: linear-gradient(180deg, var(--navy-800) 0%, var(--navy-900) 100%);
         }
 
         * {
@@ -34,50 +58,127 @@
         }
 
         body {
-            font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
-            background: linear-gradient(135deg, var(--gradient-start) 0%, var(--gradient-end) 100%);
+            font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-primary);
             min-height: 100vh;
             color: var(--text-primary);
             line-height: 1.6;
         }
 
         .container {
-            max-width: 1200px;
+            max-width: 1280px;
             margin: 0 auto;
-            padding: 2rem;
+            padding: 1.5rem 2rem;
             padding-bottom: 5rem;
         }
 
+        /* Header */
         header {
-            text-align: center;
-            margin-bottom: 2rem;
-            padding: 1.5rem 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1rem 0 1.5rem;
             border-bottom: 1px solid var(--border-color);
+            margin-bottom: 1.5rem;
         }
 
-        h1 {
-            font-size: 2.5rem;
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            background: var(--gradient-brand);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+        }
+
+        .logo-text {
+            font-size: 1.5rem;
             font-weight: 700;
-            margin-bottom: 0.5rem;
-            background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+            background: linear-gradient(135deg, var(--teal-400), var(--amber-400));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
         }
 
-        .subtitle {
-            color: var(--text-secondary);
-            font-size: 1.1rem;
-            font-weight: 300;
+        .logo-tagline {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            margin-left: 1rem;
+            padding-left: 1rem;
+            border-left: 1px solid var(--border-color);
         }
 
-        /* Company Name Section */
+        /* Tab Navigation */
+        .tab-nav {
+            display: flex;
+            gap: 0.5rem;
+            background: var(--bg-secondary);
+            padding: 0.375rem;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+        }
+
+        .tab-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            background: transparent;
+            color: var(--text-muted);
+            font-family: inherit;
+            font-size: 0.95rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .tab-btn:hover {
+            color: var(--text-primary);
+            background: var(--bg-tertiary);
+        }
+
+        .tab-btn.active {
+            background: var(--gradient-brand);
+            color: white;
+            box-shadow: 0 2px 8px rgba(20, 184, 166, 0.3);
+        }
+
+        .tab-btn .icon {
+            font-size: 1.1rem;
+        }
+
+        /* Tab Content */
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Company Section */
         .company-section {
             background: var(--bg-secondary);
-            border: 2px solid var(--accent-purple);
+            border: 2px solid var(--accent-primary);
             border-radius: 12px;
             padding: 1.25rem;
-            margin-bottom: 2rem;
+            margin-bottom: 1.5rem;
         }
 
         .company-section-header {
@@ -88,17 +189,24 @@
         }
 
         .company-icon {
-            font-size: 1.5rem;
+            width: 36px;
+            height: 36px;
+            background: var(--gradient-brand);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
         }
 
         .company-title {
-            font-size: 1.1rem;
+            font-size: 1rem;
             font-weight: 600;
         }
 
         .company-subtitle {
             color: var(--text-muted);
-            font-size: 0.85rem;
+            font-size: 0.8rem;
             margin-left: auto;
         }
 
@@ -122,12 +230,13 @@
             color: var(--text-primary);
             font-family: inherit;
             font-size: 1rem;
-            transition: border-color 0.2s;
+            transition: border-color 0.2s, box-shadow 0.2s;
         }
 
         .input-wrapper input:focus {
             outline: none;
-            border-color: var(--accent-purple);
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.15);
         }
 
         .input-wrapper input::placeholder {
@@ -140,11 +249,12 @@
             margin-top: 0.5rem;
         }
 
+        /* Grid Layout */
         .grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 2rem;
-            margin-bottom: 2rem;
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
         }
 
         @media (max-width: 900px) {
@@ -153,6 +263,7 @@
             }
         }
 
+        /* Cards */
         .card {
             background: var(--bg-secondary);
             border: 1px solid var(--border-color);
@@ -162,8 +273,8 @@
         }
 
         .card:hover {
-            border-color: var(--accent-blue);
-            box-shadow: 0 0 20px rgba(88, 166, 255, 0.1);
+            border-color: var(--accent-primary);
+            box-shadow: 0 4px 20px rgba(20, 184, 166, 0.1);
         }
 
         .card-header {
@@ -185,10 +296,10 @@
             font-size: 1.25rem;
         }
 
-        .card-icon.upload { background: linear-gradient(135deg, var(--accent-green-dim), var(--accent-green)); }
-        .card-icon.folder { background: linear-gradient(135deg, var(--accent-orange), #e3b341); }
-        .card-icon.database { background: linear-gradient(135deg, var(--accent-blue), var(--accent-cyan)); }
-        .card-icon.history { background: linear-gradient(135deg, var(--accent-purple), #c084fc); }
+        .card-icon.upload { background: var(--gradient-brand); }
+        .card-icon.folder { background: var(--gradient-accent); }
+        .card-icon.database { background: linear-gradient(135deg, var(--info), #60a5fa); }
+        .card-icon.history { background: linear-gradient(135deg, #8b5cf6, #a78bfa); }
 
         .card-title {
             font-size: 1.1rem;
@@ -207,8 +318,8 @@
         }
 
         .upload-zone:hover, .upload-zone.dragover {
-            border-color: var(--accent-green);
-            background: rgba(63, 185, 80, 0.05);
+            border-color: var(--accent-primary);
+            background: rgba(20, 184, 166, 0.05);
         }
 
         .upload-zone input {
@@ -247,13 +358,13 @@
         }
 
         .btn-primary {
-            background: linear-gradient(135deg, var(--accent-green-dim), var(--accent-green));
+            background: var(--gradient-brand);
             color: white;
         }
 
         .btn-primary:hover {
             transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(63, 185, 80, 0.3);
+            box-shadow: 0 4px 12px rgba(20, 184, 166, 0.3);
         }
 
         .btn-secondary {
@@ -263,8 +374,19 @@
         }
 
         .btn-secondary:hover {
-            border-color: var(--accent-blue);
+            border-color: var(--accent-primary);
             background: var(--bg-secondary);
+        }
+
+        .btn-accent {
+            background: var(--gradient-accent);
+            color: var(--navy-900);
+            font-weight: 600;
+        }
+
+        .btn-accent:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(245, 158, 11, 0.4);
         }
 
         .btn:disabled {
@@ -318,14 +440,14 @@
             width: 18px;
             left: 2px;
             bottom: 2px;
-            background: var(--text-secondary);
+            background: var(--text-muted);
             border-radius: 50%;
             transition: 0.2s;
         }
 
         .toggle input:checked + .toggle-slider {
-            background: var(--accent-green-dim);
-            border-color: var(--accent-green);
+            background: var(--accent-primary);
+            border-color: var(--accent-primary);
         }
 
         .toggle input:checked + .toggle-slider:before {
@@ -354,7 +476,7 @@
         }
 
         .watch-folder-path .path-icon {
-            color: var(--accent-orange);
+            color: var(--accent-secondary);
         }
 
         /* File List */
@@ -376,11 +498,11 @@
         }
 
         .file-item-icon {
-            color: var(--accent-green);
+            color: var(--accent-primary);
         }
 
         .file-item-icon.csv {
-            color: var(--accent-orange);
+            color: var(--accent-secondary);
         }
 
         .file-item-name {
@@ -418,11 +540,11 @@
         }
 
         .schema-header:hover {
-            background: rgba(88, 166, 255, 0.05);
+            background: rgba(20, 184, 166, 0.05);
         }
 
         .schema-icon {
-            color: var(--accent-blue);
+            color: var(--info);
         }
 
         .schema-name {
@@ -456,7 +578,7 @@
         }
 
         .table-icon {
-            color: var(--accent-cyan);
+            color: var(--accent-primary);
             font-size: 0.75rem;
         }
 
@@ -494,9 +616,9 @@
             flex-shrink: 0;
         }
 
-        .history-status.completed { background: var(--accent-green); }
-        .history-status.failed { background: var(--accent-red); }
-        .history-status.pending { background: var(--accent-orange); }
+        .history-status.completed { background: var(--success); }
+        .history-status.failed { background: var(--error); }
+        .history-status.pending { background: var(--warning); }
 
         .history-content {
             flex: 1;
@@ -528,7 +650,7 @@
             border: 1px solid var(--border-color);
             border-radius: 12px;
             padding: 1.5rem;
-            margin-top: 2rem;
+            margin-top: 1.5rem;
             display: none;
         }
 
@@ -581,8 +703,8 @@
             font-size: 1.25rem;
         }
 
-        .result-status-icon.success { color: var(--accent-green); }
-        .result-status-icon.error { color: var(--accent-red); }
+        .result-status-icon.success { color: var(--success); }
+        .result-status-icon.error { color: var(--error); }
 
         .result-file {
             font-weight: 500;
@@ -610,7 +732,7 @@
         .result-stat-value {
             font-size: 1.5rem;
             font-weight: 600;
-            color: var(--accent-cyan);
+            color: var(--accent-primary);
         }
 
         .result-stat-label {
@@ -620,13 +742,222 @@
         }
 
         .result-error {
-            background: rgba(248, 81, 73, 0.1);
-            border: 1px solid rgba(248, 81, 73, 0.3);
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
             border-radius: 6px;
             padding: 0.75rem;
-            color: var(--accent-red);
+            color: var(--error);
             font-size: 0.9rem;
             margin-top: 0.75rem;
+        }
+
+        /* ==================== KPI Dashboard Styles ==================== */
+        
+        .kpi-config {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .kpi-config-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .kpi-config-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr 1fr;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        @media (max-width: 1100px) {
+            .kpi-config-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .kpi-config-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .kpi-config-field label {
+            display: block;
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+
+        .kpi-config-field input,
+        .kpi-config-field select,
+        .kpi-config-field textarea {
+            width: 100%;
+            padding: 0.75rem;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 0.95rem;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .kpi-config-field input:focus,
+        .kpi-config-field select:focus,
+        .kpi-config-field textarea:focus {
+            outline: none;
+            border-color: var(--accent-secondary);
+            box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.15);
+        }
+
+        .kpi-config-field textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .kpi-config-actions {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .kpi-dashboard {
+            display: none;
+        }
+
+        .kpi-dashboard.visible {
+            display: block;
+        }
+
+        .kpi-summary {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1rem 1.5rem;
+            margin-bottom: 1.5rem;
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .kpi-summary-icon {
+            font-size: 1.5rem;
+        }
+
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1rem;
+        }
+
+        .kpi-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.25rem;
+            transition: all 0.2s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .kpi-card:hover {
+            border-color: var(--accent-secondary);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(245, 158, 11, 0.15);
+        }
+
+        .kpi-card.error {
+            border-color: var(--error);
+            opacity: 0.7;
+        }
+
+        .kpi-card-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            margin-bottom: 0.75rem;
+        }
+
+        .kpi-name {
+            font-weight: 600;
+            font-size: 0.95rem;
+            color: var(--text-primary);
+        }
+
+        .kpi-category {
+            font-size: 0.7rem;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            text-transform: uppercase;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+
+        .kpi-category.financial { background: rgba(34, 197, 94, 0.2); color: var(--success); }
+        .kpi-category.operational { background: rgba(59, 130, 246, 0.2); color: var(--info); }
+        .kpi-category.customer { background: rgba(139, 92, 246, 0.2); color: #a78bfa; }
+        .kpi-category.product { background: rgba(245, 158, 11, 0.2); color: var(--accent-secondary); }
+        .kpi-category.performance { background: rgba(20, 184, 166, 0.2); color: var(--accent-primary); }
+        .kpi-category.growth { background: rgba(34, 197, 94, 0.2); color: var(--success); }
+        .kpi-category.quality { background: rgba(139, 92, 246, 0.2); color: #a78bfa; }
+        .kpi-category.other { background: rgba(148, 163, 184, 0.2); color: var(--text-secondary); }
+
+        .kpi-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--accent-primary);
+            margin-bottom: 0.5rem;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .kpi-value.error {
+            color: var(--error);
+            font-size: 1rem;
+        }
+
+        .kpi-description {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            line-height: 1.4;
+        }
+
+        .kpi-importance {
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 4px;
+            height: 100%;
+        }
+
+        .kpi-importance.high { background: var(--success); }
+        .kpi-importance.medium { background: var(--warning); }
+        .kpi-importance.low { background: var(--text-muted); }
+
+        .kpi-loading {
+            text-align: center;
+            padding: 3rem;
+            color: var(--text-muted);
+        }
+
+        .kpi-loading .spinner {
+            width: 40px;
+            height: 40px;
+            margin: 0 auto 1rem;
+            border-width: 3px;
         }
 
         /* Status Bar */
@@ -642,6 +973,7 @@
             align-items: center;
             justify-content: space-between;
             font-size: 0.85rem;
+            z-index: 100;
         }
 
         .status-indicator {
@@ -654,11 +986,11 @@
             width: 8px;
             height: 8px;
             border-radius: 50%;
-            background: var(--accent-green);
+            background: var(--success);
         }
 
         .status-dot.processing {
-            background: var(--accent-orange);
+            background: var(--warning);
             animation: pulse 1.5s infinite;
         }
 
@@ -688,15 +1020,15 @@
             font-size: 0.9rem;
         }
 
-        .health-icon.connected { color: var(--accent-green); }
-        .health-icon.disconnected { color: var(--accent-red); }
+        .health-icon.connected { color: var(--success); }
+        .health-icon.disconnected { color: var(--error); }
 
         /* Loading Spinner */
         .spinner {
             width: 16px;
             height: 16px;
             border: 2px solid var(--border-color);
-            border-top-color: var(--accent-blue);
+            border-top-color: var(--accent-primary);
             border-radius: 50%;
             animation: spin 0.8s linear infinite;
         }
@@ -740,11 +1072,11 @@
 
         /* Validation Error */
         .input-error {
-            border-color: var(--accent-red) !important;
+            border-color: var(--error) !important;
         }
 
         .error-message {
-            color: var(--accent-red);
+            color: var(--error);
             font-size: 0.85rem;
             margin-top: 0.5rem;
         }
@@ -752,360 +1084,165 @@
         /* Utility */
         .mb-1 { margin-bottom: 1rem; }
         .mt-1 { margin-top: 1rem; }
-
-        /* ==================== KPI Dashboard Styles ==================== */
-        
-        .kpi-section {
-            margin-top: 2rem;
-            padding-top: 2rem;
-            border-top: 2px solid var(--border-color);
-        }
-
-        .kpi-section-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 1.5rem;
-        }
-
-        .kpi-section-title {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-        }
-
-        .kpi-section-title h2 {
-            font-size: 1.5rem;
-            font-weight: 600;
-            background: linear-gradient(135deg, var(--accent-orange), var(--accent-red));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-
-        .kpi-section-title .icon {
-            font-size: 1.75rem;
-        }
-
-        .kpi-config {
-            background: var(--bg-secondary);
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
-            padding: 1.5rem;
-            margin-bottom: 1.5rem;
-        }
-
-        .kpi-config-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
-            gap: 1rem;
-            margin-bottom: 1rem;
-        }
-
-        @media (max-width: 900px) {
-            .kpi-config-grid {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        .kpi-config-field label {
-            display: block;
-            color: var(--text-secondary);
-            font-size: 0.85rem;
-            margin-bottom: 0.5rem;
-        }
-
-        .kpi-config-field input,
-        .kpi-config-field select,
-        .kpi-config-field textarea {
-            width: 100%;
-            padding: 0.75rem;
-            background: var(--bg-tertiary);
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            color: var(--text-primary);
-            font-family: inherit;
-            font-size: 0.95rem;
-        }
-
-        .kpi-config-field textarea {
-            resize: vertical;
-            min-height: 80px;
-        }
-
-        .kpi-config-field input:focus,
-        .kpi-config-field select:focus,
-        .kpi-config-field textarea:focus {
-            outline: none;
-            border-color: var(--accent-orange);
-        }
-
-        .kpi-dashboard {
-            display: none;
-        }
-
-        .kpi-dashboard.visible {
-            display: block;
-        }
-
-        .kpi-summary {
-            background: var(--bg-secondary);
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
-            padding: 1rem 1.5rem;
-            margin-bottom: 1.5rem;
-            color: var(--text-secondary);
-            font-size: 0.95rem;
-        }
-
-        .kpi-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            gap: 1rem;
-        }
-
-        .kpi-card {
-            background: var(--bg-secondary);
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
-            padding: 1.25rem;
-            transition: all 0.2s ease;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .kpi-card:hover {
-            border-color: var(--accent-orange);
-            transform: translateY(-2px);
-            box-shadow: 0 4px 20px rgba(210, 153, 34, 0.15);
-        }
-
-        .kpi-card.error {
-            border-color: var(--accent-red);
-            opacity: 0.7;
-        }
-
-        .kpi-card-header {
-            display: flex;
-            align-items: flex-start;
-            justify-content: space-between;
-            margin-bottom: 0.75rem;
-        }
-
-        .kpi-name {
-            font-weight: 600;
-            font-size: 0.95rem;
-            color: var(--text-primary);
-        }
-
-        .kpi-category {
-            font-size: 0.7rem;
-            padding: 0.2rem 0.5rem;
-            border-radius: 4px;
-            text-transform: uppercase;
-            font-weight: 500;
-        }
-
-        .kpi-category.financial { background: rgba(63, 185, 80, 0.2); color: var(--accent-green); }
-        .kpi-category.operational { background: rgba(88, 166, 255, 0.2); color: var(--accent-blue); }
-        .kpi-category.customer { background: rgba(163, 113, 247, 0.2); color: var(--accent-purple); }
-        .kpi-category.product { background: rgba(210, 153, 34, 0.2); color: var(--accent-orange); }
-        .kpi-category.performance { background: rgba(57, 197, 207, 0.2); color: var(--accent-cyan); }
-        .kpi-category.growth { background: rgba(63, 185, 80, 0.2); color: var(--accent-green); }
-        .kpi-category.quality { background: rgba(163, 113, 247, 0.2); color: var(--accent-purple); }
-        .kpi-category.other { background: rgba(139, 148, 158, 0.2); color: var(--text-secondary); }
-
-        .kpi-value {
-            font-size: 2rem;
-            font-weight: 700;
-            color: var(--accent-cyan);
-            margin-bottom: 0.5rem;
-            font-family: 'JetBrains Mono', monospace;
-        }
-
-        .kpi-value.error {
-            color: var(--accent-red);
-            font-size: 1rem;
-        }
-
-        .kpi-description {
-            font-size: 0.85rem;
-            color: var(--text-muted);
-            line-height: 1.4;
-        }
-
-        .kpi-importance {
-            position: absolute;
-            top: 0;
-            right: 0;
-            width: 4px;
-            height: 100%;
-        }
-
-        .kpi-importance.high { background: var(--accent-green); }
-        .kpi-importance.medium { background: var(--accent-orange); }
-        .kpi-importance.low { background: var(--text-muted); }
-
-        .kpi-loading {
-            text-align: center;
-            padding: 3rem;
-            color: var(--text-muted);
-        }
-
-        .kpi-loading .spinner {
-            width: 40px;
-            height: 40px;
-            margin: 0 auto 1rem;
-            border-width: 3px;
-        }
-
-        .btn-kpi {
-            background: linear-gradient(135deg, var(--accent-orange), #e3b341);
-            color: var(--bg-primary);
-            font-weight: 600;
-        }
-
-        .btn-kpi:hover {
-            box-shadow: 0 4px 12px rgba(210, 153, 34, 0.4);
-        }
+        .full-width { grid-column: 1 / -1; }
     </style>
 </head>
 <body>
     <div class="container">
+        <!-- Header -->
         <header>
-            <h1>Data → PostgreSQL</h1>
-            <p class="subtitle">Convert Excel & CSV files to structured database tables with AI-powered column standardization</p>
+            <div class="logo">
+                <div class="logo-icon">📊</div>
+                <span class="logo-text">DataFlow</span>
+                <span class="logo-tagline">Data Platform for Growing Businesses</span>
+            </div>
+            <nav class="tab-nav">
+                <button class="tab-btn active" data-tab="ingestion">
+                    <span class="icon">📥</span>
+                    Data Ingestion
+                </button>
+                <button class="tab-btn" data-tab="analytics">
+                    <span class="icon">📈</span>
+                    KPI Analytics
+                </button>
+            </nav>
         </header>
 
-        <!-- Company Name Section -->
-        <div class="company-section">
-            <div class="company-section-header">
-                <span class="company-icon">🏢</span>
-                <span class="company-title">Company / Schema Name</span>
-                <span class="company-subtitle">All data will be stored under this schema</span>
-            </div>
-            <div class="input-group">
-                <div class="input-wrapper">
-                    <input type="text" id="companyNameInput" placeholder="Enter company name (e.g., acme_corp, my_company)" />
-                    <div class="input-hint">
-                        Table naming: <strong>Excel</strong> → filename_sheetname | <strong>CSV</strong> → filename
+        <!-- Tab 1: Data Ingestion -->
+        <div class="tab-content active" id="tab-ingestion">
+            <!-- Company Name Section -->
+            <div class="company-section">
+                <div class="company-section-header">
+                    <div class="company-icon">🏢</div>
+                    <span class="company-title">Company / Schema Name</span>
+                    <span class="company-subtitle">All data will be stored under this schema</span>
+                </div>
+                <div class="input-group">
+                    <div class="input-wrapper">
+                        <input type="text" id="companyNameInput" placeholder="Enter company name (e.g., acme_corp, my_company)" />
+                        <div class="input-hint">
+                            Table naming: <strong>Excel</strong> → filename_sheetname | <strong>CSV</strong> → filename
+                        </div>
                     </div>
                 </div>
+            </div>
+
+            <div class="grid">
+                <!-- Upload Card -->
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-icon upload">📤</div>
+                        <h2 class="card-title">Upload File</h2>
+                    </div>
+                    <div class="upload-zone" id="uploadZone">
+                        <input type="file" id="fileInput" accept=".xlsx,.xls,.xlsm,.csv">
+                        <div class="upload-zone-icon">📊</div>
+                        <div class="upload-zone-text">Drop your file here or click to browse</div>
+                        <div class="upload-zone-hint">Supports .xlsx, .xls, .xlsm, .csv files</div>
+                    </div>
+                    <div class="toggle-wrapper">
+                        <label class="toggle">
+                            <input type="checkbox" id="useLlmToggle" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                        <span class="toggle-label">Use AI for column standardization</span>
+                    </div>
+                </div>
+
+                <!-- Watch Folder Card -->
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-icon folder">📁</div>
+                        <h2 class="card-title">Watch Folder</h2>
+                    </div>
+                    <div class="watch-folder-path">
+                        <span class="path-icon">📂</span>
+                        <span id="watchFolderPath">Loading...</span>
+                    </div>
+                    <div id="watchFolderFiles" class="file-list">
+                        <div class="empty-state">
+                            <div class="empty-state-icon">📭</div>
+                            <div>No files in watch folder</div>
+                        </div>
+                    </div>
+                    <div class="btn-group">
+                        <button class="btn btn-primary" id="scanFolderBtn">
+                            🔍 Scan & Process
+                        </button>
+                        <button class="btn btn-secondary" id="refreshFolderBtn">
+                            🔄 Refresh
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Database Schemas Card -->
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-icon database">🗄️</div>
+                        <h2 class="card-title">Database Schemas</h2>
+                    </div>
+                    <div id="schemaList" class="schema-list">
+                        <div class="empty-state">
+                            <div class="empty-state-icon">📦</div>
+                            <div>No schemas found</div>
+                        </div>
+                    </div>
+                    <div class="btn-group">
+                        <button class="btn btn-secondary" id="refreshSchemasBtn">
+                            🔄 Refresh
+                        </button>
+                    </div>
+                </div>
+
+                <!-- History Card -->
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-icon history">📜</div>
+                        <h2 class="card-title">Import History</h2>
+                    </div>
+                    <div id="historyList" class="history-list">
+                        <div class="empty-state">
+                            <div class="empty-state-icon">📝</div>
+                            <div>No imports yet</div>
+                        </div>
+                    </div>
+                    <div class="btn-group">
+                        <button class="btn btn-secondary" id="refreshHistoryBtn">
+                            🔄 Refresh
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Results Panel -->
+            <div class="results-panel" id="resultsPanel">
+                <div class="results-header">
+                    <h3 class="results-title">Processing Results</h3>
+                    <button class="results-close" id="closeResultsBtn">×</button>
+                </div>
+                <div id="resultsContent"></div>
             </div>
         </div>
 
-        <div class="grid">
-            <!-- Upload Card -->
-            <div class="card">
-                <div class="card-header">
-                    <div class="card-icon upload">📤</div>
-                    <h2 class="card-title">Upload File</h2>
-                </div>
-                <div class="upload-zone" id="uploadZone">
-                    <input type="file" id="fileInput" accept=".xlsx,.xls,.xlsm,.csv">
-                    <div class="upload-zone-icon">📊</div>
-                    <div class="upload-zone-text">Drop your file here or click to browse</div>
-                    <div class="upload-zone-hint">Supports .xlsx, .xls, .xlsm, .csv files</div>
-                </div>
-                <div class="toggle-wrapper">
-                    <label class="toggle">
-                        <input type="checkbox" id="useLlmToggle" checked>
-                        <span class="toggle-slider"></span>
-                    </label>
-                    <span class="toggle-label">Use AI for column standardization</span>
-                </div>
-            </div>
-
-            <!-- Watch Folder Card -->
-            <div class="card">
-                <div class="card-header">
-                    <div class="card-icon folder">📁</div>
-                    <h2 class="card-title">Watch Folder</h2>
-                </div>
-                <div class="watch-folder-path">
-                    <span class="path-icon">📂</span>
-                    <span id="watchFolderPath">Loading...</span>
-                </div>
-                <div id="watchFolderFiles" class="file-list">
-                    <div class="empty-state">
-                        <div class="empty-state-icon">📭</div>
-                        <div>No files in watch folder</div>
-                    </div>
-                </div>
-                <div class="btn-group">
-                    <button class="btn btn-primary" id="scanFolderBtn">
-                        🔍 Scan & Process
-                    </button>
-                    <button class="btn btn-secondary" id="refreshFolderBtn">
-                        🔄 Refresh
-                    </button>
-                </div>
-            </div>
-
-            <!-- Database Schemas Card -->
-            <div class="card">
-                <div class="card-header">
-                    <div class="card-icon database">🗄️</div>
-                    <h2 class="card-title">Database Schemas</h2>
-                </div>
-                <div id="schemaList" class="schema-list">
-                    <div class="empty-state">
-                        <div class="empty-state-icon">📦</div>
-                        <div>No schemas found</div>
-                    </div>
-                </div>
-                <div class="btn-group">
-                    <button class="btn btn-secondary" id="refreshSchemasBtn">
-                        🔄 Refresh
-                    </button>
-                </div>
-            </div>
-
-            <!-- History Card -->
-            <div class="card">
-                <div class="card-header">
-                    <div class="card-icon history">📜</div>
-                    <h2 class="card-title">Import History</h2>
-                </div>
-                <div id="historyList" class="history-list">
-                    <div class="empty-state">
-                        <div class="empty-state-icon">📝</div>
-                        <div>No imports yet</div>
-                    </div>
-                </div>
-                <div class="btn-group">
-                    <button class="btn btn-secondary" id="refreshHistoryBtn">
-                        🔄 Refresh
-                    </button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Results Panel -->
-        <div class="results-panel" id="resultsPanel">
-            <div class="results-header">
-                <h3 class="results-title">Processing Results</h3>
-                <button class="results-close" id="closeResultsBtn">×</button>
-            </div>
-            <div id="resultsContent"></div>
-        </div>
-
-        <!-- KPI Dashboard Section -->
-        <div class="kpi-section">
-            <div class="kpi-section-header">
-                <div class="kpi-section-title">
-                    <span class="icon">📊</span>
-                    <h2>KPI Analytics Dashboard</h2>
-                </div>
-            </div>
-
+        <!-- Tab 2: KPI Analytics -->
+        <div class="tab-content" id="tab-analytics">
             <!-- KPI Configuration -->
             <div class="kpi-config">
+                <div class="kpi-config-title">
+                    <span>⚙️</span>
+                    Configure KPI Analysis
+                </div>
                 <div class="kpi-config-grid">
                     <div class="kpi-config-field">
-                        <label>Select Schema</label>
+                        <label>Select Schema *</label>
                         <select id="kpiSchemaSelect">
                             <option value="">-- Select a schema --</option>
+                        </select>
+                    </div>
+                    <div class="kpi-config-field">
+                        <label>Select Table (Optional)</label>
+                        <select id="kpiTableSelect">
+                            <option value="">All Tables</option>
                         </select>
                     </div>
                     <div class="kpi-config-field">
@@ -1123,21 +1260,30 @@
                         </select>
                     </div>
                     <div class="kpi-config-field">
-                        <label>&nbsp;</label>
-                        <button class="btn btn-kpi" id="generateKpisBtn" style="width: 100%;">
-                            🚀 Generate KPIs
-                        </button>
+                        <label>Company Name</label>
+                        <input type="text" id="kpiCompanyName" placeholder="Your company name" />
                     </div>
                 </div>
-                <div class="kpi-config-field">
-                    <label>Company Description (Optional - helps AI suggest better KPIs)</label>
-                    <textarea id="kpiCompanyDescription" placeholder="Describe what your company does, your main products/services, target customers, etc."></textarea>
+                <div class="kpi-config-field full-width">
+                    <label>Company Description (Helps AI suggest better KPIs)</label>
+                    <textarea id="kpiCompanyDescription" placeholder="Describe what your company does, your main products/services, target customers, key business processes..."></textarea>
+                </div>
+                <div class="kpi-config-actions">
+                    <button class="btn btn-accent" id="generateKpisBtn">
+                        🚀 Generate KPIs
+                    </button>
+                    <span id="kpiScopeHint" style="color: var(--text-muted); font-size: 0.85rem;">
+                        Select a schema to begin
+                    </span>
                 </div>
             </div>
 
             <!-- KPI Dashboard Content -->
             <div class="kpi-dashboard" id="kpiDashboard">
-                <div class="kpi-summary" id="kpiSummary"></div>
+                <div class="kpi-summary" id="kpiSummary">
+                    <span class="kpi-summary-icon">📈</span>
+                    <span id="kpiSummaryText"></span>
+                </div>
                 <div class="kpi-grid" id="kpiGrid"></div>
             </div>
 
@@ -1171,6 +1317,35 @@
     <script>
         const API_BASE = '';
 
+        // ==================== Tab Navigation ====================
+        const tabBtns = document.querySelectorAll('.tab-btn');
+        const tabContents = document.querySelectorAll('.tab-content');
+
+        tabBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const tabId = btn.dataset.tab;
+                
+                // Update button states
+                tabBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                
+                // Update content visibility
+                tabContents.forEach(content => {
+                    content.classList.remove('active');
+                    if (content.id === `tab-${tabId}`) {
+                        content.classList.add('active');
+                    }
+                });
+
+                // Refresh data when switching to analytics tab
+                if (tabId === 'analytics') {
+                    loadSchemasForKpi();
+                }
+            });
+        });
+
+        // ==================== Data Ingestion Tab ====================
+        
         // DOM Elements
         const companyNameInput = document.getElementById('companyNameInput');
         const uploadZone = document.getElementById('uploadZone');
@@ -1354,13 +1529,17 @@
             }
         }
 
+        let schemasData = [];
+
         async function loadSchemas() {
             try {
                 const response = await fetch(`${API_BASE}/api/schemas`);
                 const data = await response.json();
 
-                if (data.schemas && data.schemas.length > 0) {
-                    schemaList.innerHTML = data.schemas.map((schema, idx) => `
+                schemasData = data.schemas || [];
+
+                if (schemasData.length > 0) {
+                    schemaList.innerHTML = schemasData.map((schema, idx) => `
                         <div class="schema-item">
                             <div class="schema-header" onclick="toggleSchema(${idx})">
                                 <span class="schema-icon">📁</span>
@@ -1512,29 +1691,93 @@
             resultsPanel.classList.add('visible');
         }
 
-        // ==================== KPI Dashboard Functions ====================
+        // ==================== KPI Analytics Tab ====================
         
         // KPI DOM Elements
         const kpiSchemaSelect = document.getElementById('kpiSchemaSelect');
+        const kpiTableSelect = document.getElementById('kpiTableSelect');
         const kpiIndustrySelect = document.getElementById('kpiIndustrySelect');
+        const kpiCompanyName = document.getElementById('kpiCompanyName');
         const kpiCompanyDescription = document.getElementById('kpiCompanyDescription');
         const generateKpisBtn = document.getElementById('generateKpisBtn');
         const kpiDashboard = document.getElementById('kpiDashboard');
-        const kpiSummary = document.getElementById('kpiSummary');
+        const kpiSummaryText = document.getElementById('kpiSummaryText');
         const kpiGrid = document.getElementById('kpiGrid');
         const kpiLoading = document.getElementById('kpiLoading');
+        const kpiScopeHint = document.getElementById('kpiScopeHint');
 
-        // Populate KPI schema dropdown when schemas are loaded
-        function populateKpiSchemaSelect(schemas) {
-            kpiSchemaSelect.innerHTML = '<option value="">-- Select a schema --</option>';
-            schemas.forEach(schema => {
-                if (!schema.schema_name.startsWith('_') && schema.schema_name !== 'public') {
-                    const option = document.createElement('option');
-                    option.value = schema.schema_name;
-                    option.textContent = `${schema.schema_name} (${schema.tables.length} tables, ${schema.total_rows.toLocaleString()} rows)`;
-                    kpiSchemaSelect.appendChild(option);
+        // Load schemas for KPI dropdown
+        async function loadSchemasForKpi() {
+            try {
+                const response = await fetch(`${API_BASE}/api/schemas`);
+                const data = await response.json();
+
+                kpiSchemaSelect.innerHTML = '<option value="">-- Select a schema --</option>';
+                
+                if (data.schemas && data.schemas.length > 0) {
+                    data.schemas.forEach(schema => {
+                        if (!schema.schema_name.startsWith('_') && schema.schema_name !== 'public') {
+                            const option = document.createElement('option');
+                            option.value = schema.schema_name;
+                            option.textContent = `${schema.schema_name} (${schema.tables.length} tables, ${schema.total_rows.toLocaleString()} rows)`;
+                            option.dataset.tables = JSON.stringify(schema.tables);
+                            kpiSchemaSelect.appendChild(option);
+                        }
+                    });
                 }
-            });
+            } catch (error) {
+                console.error('Error loading schemas for KPI:', error);
+            }
+        }
+
+        // When schema changes, populate table dropdown
+        kpiSchemaSelect.addEventListener('change', async () => {
+            const schemaName = kpiSchemaSelect.value;
+            kpiTableSelect.innerHTML = '<option value="">All Tables</option>';
+            
+            if (!schemaName) {
+                kpiScopeHint.textContent = 'Select a schema to begin';
+                return;
+            }
+
+            // Load tables for this schema
+            try {
+                const response = await fetch(`${API_BASE}/api/schemas/${encodeURIComponent(schemaName)}/tables`);
+                const data = await response.json();
+                
+                if (data.tables && data.tables.length > 0) {
+                    data.tables.forEach(table => {
+                        const option = document.createElement('option');
+                        option.value = table.table_name;
+                        option.textContent = `${table.table_name} (${table.row_count.toLocaleString()} rows)`;
+                        kpiTableSelect.appendChild(option);
+                    });
+                }
+                
+                updateScopeHint();
+            } catch (error) {
+                console.error('Error loading tables:', error);
+            }
+
+            // Auto-fill company name if empty
+            if (!kpiCompanyName.value) {
+                kpiCompanyName.value = schemaName.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+            }
+        });
+
+        kpiTableSelect.addEventListener('change', updateScopeHint);
+
+        function updateScopeHint() {
+            const schema = kpiSchemaSelect.value;
+            const table = kpiTableSelect.value;
+            
+            if (!schema) {
+                kpiScopeHint.textContent = 'Select a schema to begin';
+            } else if (table) {
+                kpiScopeHint.textContent = `Analysis scope: ${schema}.${table}`;
+            } else {
+                kpiScopeHint.textContent = `Analysis scope: All tables in ${schema}`;
+            }
         }
 
         // Generate KPIs button handler
@@ -1547,7 +1790,8 @@
                 return;
             }
 
-            const companyName = companyNameInput.value.trim() || schemaName;
+            const tableName = kpiTableSelect.value || null;
+            const companyName = kpiCompanyName.value.trim() || schemaName;
             const industry = kpiIndustrySelect.value || null;
             const description = kpiCompanyDescription.value.trim() || null;
 
@@ -1560,6 +1804,7 @@
             try {
                 // Build URL with query params
                 let url = `${API_BASE}/api/kpi/dashboard/${encodeURIComponent(schemaName)}?company_name=${encodeURIComponent(companyName)}`;
+                if (tableName) url += `&table_name=${encodeURIComponent(tableName)}`;
                 if (industry) url += `&industry=${encodeURIComponent(industry)}`;
                 if (description) url += `&company_description=${encodeURIComponent(description)}`;
 
@@ -1592,9 +1837,12 @@
             // Show summary
             const successCount = data.kpis.filter(k => !k.error).length;
             const errorCount = data.kpis.filter(k => k.error).length;
+            const tableScope = data.table_name ? ` · Table: ${data.table_name}` : '';
             
-            kpiSummary.innerHTML = `
-                <strong>📈 ${data.company_name}</strong> ${data.industry ? `· ${data.industry}` : ''} 
+            kpiSummaryText.innerHTML = `
+                <strong>${data.company_name}</strong> 
+                ${data.industry ? `· ${data.industry}` : ''} 
+                ${tableScope}
                 · ${successCount} KPIs computed ${errorCount > 0 ? `· ${errorCount} errors` : ''}
                 · Generated at ${new Date(data.generated_at).toLocaleString()}
             `;
@@ -1643,46 +1891,7 @@
             return div.innerHTML;
         }
 
-        // Update loadSchemas to also populate KPI select
-        const originalLoadSchemas = loadSchemas;
-        loadSchemas = async function() {
-            try {
-                const response = await fetch(`${API_BASE}/api/schemas`);
-                const data = await response.json();
-
-                if (data.schemas && data.schemas.length > 0) {
-                    // Populate KPI schema select
-                    populateKpiSchemaSelect(data.schemas);
-
-                    schemaList.innerHTML = data.schemas.map((schema, idx) => `
-                        <div class="schema-item" id="schema-${idx}">
-                            <div class="schema-item-header" onclick="toggleSchema(${idx})">
-                                <span class="schema-toggle">▶</span>
-                                <span class="schema-name">${schema.schema_name}</span>
-                                <span class="schema-badge">${schema.tables.length} tables</span>
-                            </div>
-                            <div class="schema-tables">
-                                ${schema.tables.map(table => `
-                                    <div class="schema-table">${table}</div>
-                                `).join('')}
-                            </div>
-                        </div>
-                    `).join('');
-                } else {
-                    schemaList.innerHTML = `
-                        <div class="empty-state">
-                            <div class="empty-state-icon">📦</div>
-                            <div>No schemas found</div>
-                        </div>
-                    `;
-                    kpiSchemaSelect.innerHTML = '<option value="">-- No schemas available --</option>';
-                }
-            } catch (error) {
-                console.error('Error loading schemas:', error);
-            }
-        };
-
-        // Initial load
+        // ==================== Initial Load ====================
         document.addEventListener('DOMContentLoaded', () => {
             checkHealth();
             loadWatchFolder();

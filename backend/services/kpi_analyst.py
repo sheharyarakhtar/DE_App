@@ -160,6 +160,34 @@ class KPIAnalyst:
             self.client = None
             logger.warning("OpenAI API key not configured. KPI Analyst will not work.")
     
+    def _get_schema_text(self, schema_name: str, table_name: Optional[str] = None) -> str:
+        """
+        Get schema text for LLM, optionally filtered to a specific table.
+        """
+        summary = self.db_manager.get_schema_summary(schema_name)
+        
+        # Filter to specific table if provided
+        if table_name:
+            summary["tables"] = [t for t in summary["tables"] if t["table_name"] == table_name]
+        
+        lines = [f"Database Schema: {summary['schema_name']}", "=" * 50, ""]
+        
+        if table_name and not summary["tables"]:
+            lines.append(f"WARNING: Table '{table_name}' not found in schema")
+            return "\n".join(lines)
+        
+        for table in summary["tables"]:
+            lines.append(f"Table: {table['table_name']} ({table['row_count']} rows)")
+            lines.append("-" * 40)
+            
+            for col in table["columns"]:
+                nullable = "NULL" if col["is_nullable"] == "YES" else "NOT NULL"
+                lines.append(f"  - {col['column_name']}: {col['data_type']} ({nullable})")
+            
+            lines.append("")
+        
+        return "\n".join(lines)
+    
     def analyze(self, request: KPIAnalysisRequest) -> KPIAnalysisResponse:
         """
         Analyze a schema and suggest relevant KPIs.
@@ -172,6 +200,7 @@ class KPIAnalyst:
         logger.info("=" * 80)
         logger.info(f"Timestamp: {datetime.now().isoformat()}")
         logger.info(f"Schema: {request.schema_name}")
+        logger.info(f"Table: {request.table_name or 'All tables'}")
         logger.info(f"Company: {request.company_name}")
         logger.info(f"Industry: {request.industry}")
         logger.info(f"Description: {request.company_description}")
@@ -189,8 +218,8 @@ class KPIAnalyst:
         logger.info("-" * 40)
         logger.info(system_prompt)
         
-        # Get schema info for context
-        schema_text = self.db_manager.get_schema_for_llm(request.schema_name)
+        # Get schema info for context (filtered by table if specified)
+        schema_text = self._get_schema_text(request.schema_name, request.table_name)
         
         logger.info("-" * 40)
         logger.info("SCHEMA INFO:")
@@ -198,11 +227,13 @@ class KPIAnalyst:
         logger.info(schema_text)
         
         # Build focused user prompt
+        table_scope = f"the '{request.table_name}' table" if request.table_name else "all tables"
         user_prompt = f"""Analyze the database for {request.company_name} and suggest {request.max_kpis} highly relevant KPIs.
 
 Company: {request.company_name}
 Industry: {request.industry or 'Not specified'}
 Description: {request.company_description or 'Not provided'}
+Analysis Scope: {table_scope}
 
 Available Database Schema:
 {schema_text}
@@ -210,8 +241,9 @@ Available Database Schema:
 Instructions:
 1. Use the tools to explore the data (get_schema_summary, get_sample_data, get_column_statistics)
 2. Focus on metrics that would matter for THIS specific business based on the description
-3. Ensure SQL queries return properly rounded single values
-4. Provide your final KPI suggestions in the required JSON format"""
+3. {"Focus ONLY on the " + request.table_name + " table for all KPIs" if request.table_name else "You may use any tables in the schema"}
+4. Ensure SQL queries return properly rounded single values
+5. Provide your final KPI suggestions in the required JSON format"""
 
         logger.info("-" * 40)
         logger.info("USER PROMPT:")
@@ -341,16 +373,26 @@ Instructions:
                 analysis_summary=f"Failed to parse KPI suggestions. Raw response: {content[:500]}"
             )
     
-    def suggest_basic_kpis(self, schema_name: str) -> list[KPIDefinition]:
+    def suggest_basic_kpis(self, schema_name: str, table_name: Optional[str] = None) -> list[KPIDefinition]:
         """
         Suggest basic KPIs without using LLM (fallback).
+        
+        Args:
+            schema_name: Database schema to analyze
+            table_name: Optional specific table to analyze
         """
         logger.info("=" * 80)
         logger.info("KPI ANALYST - Generating Basic KPIs (No LLM)")
         logger.info("=" * 80)
         logger.info(f"Schema: {schema_name}")
+        logger.info(f"Table: {table_name or 'All tables'}")
         
         summary = self.db_manager.get_schema_summary(schema_name)
+        
+        # Filter to specific table if provided
+        if table_name:
+            summary["tables"] = [t for t in summary["tables"] if t["table_name"] == table_name]
+        
         kpis = []
         
         logger.info(f"Found {len(summary['tables'])} tables")
@@ -358,9 +400,10 @@ Instructions:
         total_tables = len(summary["tables"])
         if total_tables > 0:
             total_rows = sum(t["row_count"] for t in summary["tables"])
+            scope_desc = f"in {table_name}" if table_name else "across all tables in the database"
             kpi = KPIDefinition(
                 name="Total Records",
-                description="Total number of records across all tables in the database",
+                description=f"Total number of records {scope_desc}",
                 sql_query=f"SELECT {total_rows} as total_records",
                 category=KPICategory.OPERATIONAL,
                 importance=KPIImportance.MEDIUM,

@@ -52,6 +52,7 @@ class KPIResult(BaseModel):
 class KPIAnalysisRequest(BaseModel):
     """Request to analyze a schema and suggest KPIs."""
     schema_name: str = Field(..., description="Name of the database schema to analyze")
+    table_name: Optional[str] = Field(default=None, description="Specific table to analyze (if None, analyze all tables)")
     company_name: str = Field(..., description="Name of the company")
     company_description: Optional[str] = Field(default=None, description="Description of what the company does")
     industry: Optional[str] = Field(default=None, description="Industry/vertical of the company")
@@ -85,6 +86,7 @@ class KPIComputeResponse(BaseModel):
 class KPIDashboard(BaseModel):
     """Complete KPI dashboard for a company."""
     schema_name: str
+    table_name: Optional[str] = None
     company_name: str
     company_description: Optional[str] = None
     industry: Optional[str] = None

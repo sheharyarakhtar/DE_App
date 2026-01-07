@@ -555,7 +555,8 @@ async def get_kpi_dashboard(
     schema_name: str,
     company_name: str,
     company_description: Optional[str] = None,
-    industry: Optional[str] = None
+    industry: Optional[str] = None,
+    table_name: Optional[str] = None
 ):
     """
     Get a complete KPI dashboard for a schema.
@@ -564,6 +565,13 @@ async def get_kpi_dashboard(
     1. Analyzes the schema and suggests KPIs
     2. Computes all suggested KPIs
     3. Returns the complete dashboard
+    
+    Args:
+        schema_name: Database schema to analyze
+        company_name: Name of the company
+        company_description: Optional description of the company
+        industry: Optional industry/vertical
+        table_name: Optional specific table to analyze (if None, analyze all tables)
     """
     # Reset logs for fresh dashboard generation
     reset_kpi_logs()
@@ -575,6 +583,7 @@ async def get_kpi_dashboard(
         # Step 1: Analyze and get KPI suggestions
         analysis_request = KPIAnalysisRequest(
             schema_name=schema_name,
+            table_name=table_name,
             company_name=company_name,
             company_description=company_description,
             industry=industry,
@@ -584,7 +593,7 @@ async def get_kpi_dashboard(
         if analyst.client:
             analysis = analyst.analyze(analysis_request)
         else:
-            basic_kpis = analyst.suggest_basic_kpis(schema_name)
+            basic_kpis = analyst.suggest_basic_kpis(schema_name, table_name)
             analysis = KPIAnalysisResponse(
                 schema_name=schema_name,
                 company_name=company_name,
@@ -603,6 +612,7 @@ async def get_kpi_dashboard(
         # Step 3: Build dashboard response
         return KPIDashboard(
             schema_name=schema_name,
+            table_name=table_name,
             company_name=company_name,
             company_description=company_description,
             industry=industry,
