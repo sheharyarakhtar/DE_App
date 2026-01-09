@@ -1085,6 +1085,234 @@
         .mb-1 { margin-bottom: 1rem; }
         .mt-1 { margin-top: 1rem; }
         .full-width { grid-column: 1 / -1; }
+
+        /* Settings Button */
+        .settings-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            background: var(--bg-secondary);
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 1.25rem;
+            transition: all 0.2s ease;
+            margin-left: 1rem;
+        }
+
+        .settings-btn:hover {
+            border-color: var(--accent-primary);
+            color: var(--accent-primary);
+            background: var(--bg-tertiary);
+        }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(4px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .modal-overlay.visible {
+            display: flex;
+        }
+
+        .modal {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            width: 100%;
+            max-width: 500px;
+            max-height: 90vh;
+            overflow-y: auto;
+            animation: modalIn 0.2s ease;
+        }
+
+        @keyframes modalIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        .modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1.25rem 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .modal-title {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 0.25rem;
+            line-height: 1;
+        }
+
+        .modal-close:hover {
+            color: var(--text-primary);
+        }
+
+        .modal-body {
+            padding: 1.5rem;
+        }
+
+        .modal-section {
+            margin-bottom: 1.5rem;
+        }
+
+        .modal-section:last-child {
+            margin-bottom: 0;
+        }
+
+        .modal-section-title {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .modal-section-title .status-badge {
+            margin-left: auto;
+            font-size: 0.75rem;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-weight: 500;
+        }
+
+        .status-badge.connected {
+            background: rgba(34, 197, 94, 0.2);
+            color: var(--success);
+        }
+
+        .status-badge.disconnected {
+            background: rgba(239, 68, 68, 0.2);
+            color: var(--error);
+        }
+
+        .status-badge.not-configured {
+            background: rgba(148, 163, 184, 0.2);
+            color: var(--text-muted);
+        }
+
+        .config-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.75rem;
+        }
+
+        .config-field {
+            display: flex;
+            flex-direction: column;
+            gap: 0.35rem;
+        }
+
+        .config-field.full {
+            grid-column: 1 / -1;
+        }
+
+        .config-field label {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        .config-field input {
+            padding: 0.65rem 0.75rem;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 0.9rem;
+        }
+
+        .config-field input:focus {
+            outline: none;
+            border-color: var(--accent-primary);
+        }
+
+        .config-field input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .test-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 0.6rem 1rem;
+            margin-top: 0.75rem;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            color: var(--text-secondary);
+            font-family: inherit;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .test-btn:hover {
+            border-color: var(--accent-primary);
+            color: var(--accent-primary);
+        }
+
+        .test-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .test-result {
+            font-size: 0.8rem;
+            margin-top: 0.5rem;
+            padding: 0.5rem 0.75rem;
+            border-radius: 4px;
+        }
+
+        .test-result.success {
+            background: rgba(34, 197, 94, 0.1);
+            color: var(--success);
+        }
+
+        .test-result.error {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--error);
+        }
+
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.75rem;
+            padding: 1rem 1.5rem;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
     </style>
 </head>
 <body>
@@ -1096,16 +1324,21 @@
                 <span class="logo-text">DataFlow</span>
                 <span class="logo-tagline">Data Platform for Growing Businesses</span>
             </div>
-            <nav class="tab-nav">
-                <button class="tab-btn active" data-tab="ingestion">
-                    <span class="icon">📥</span>
-                    Data Ingestion
+            <div class="header-right">
+                <nav class="tab-nav">
+                    <button class="tab-btn active" data-tab="ingestion">
+                        <span class="icon">📥</span>
+                        Data Ingestion
+                    </button>
+                    <button class="tab-btn" data-tab="analytics">
+                        <span class="icon">📈</span>
+                        KPI Analytics
+                    </button>
+                </nav>
+                <button class="settings-btn" id="settingsBtn" title="Settings">
+                    ⚙️
                 </button>
-                <button class="tab-btn" data-tab="analytics">
-                    <span class="icon">📈</span>
-                    KPI Analytics
-                </button>
-            </nav>
+            </div>
         </header>
 
         <!-- Tab 1: Data Ingestion -->
@@ -1292,6 +1525,76 @@
                 <div class="spinner"></div>
                 <div>Analyzing your data and generating KPIs...</div>
                 <div style="font-size: 0.85rem; margin-top: 0.5rem;">This may take a moment</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div class="modal-overlay" id="settingsModal">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="modal-title">
+                    <span>⚙️</span>
+                    Settings
+                </div>
+                <button class="modal-close" id="closeSettingsBtn">×</button>
+            </div>
+            <div class="modal-body">
+                <!-- Database Configuration -->
+                <div class="modal-section">
+                    <div class="modal-section-title">
+                        <span>🗄️</span>
+                        Database Connection
+                        <span class="status-badge not-configured" id="dbStatusBadge">Not Connected</span>
+                    </div>
+                    <div class="config-grid">
+                        <div class="config-field">
+                            <label>Host</label>
+                            <input type="text" id="dbHost" placeholder="localhost" />
+                        </div>
+                        <div class="config-field">
+                            <label>Port</label>
+                            <input type="number" id="dbPort" placeholder="5432" />
+                        </div>
+                        <div class="config-field">
+                            <label>Username</label>
+                            <input type="text" id="dbUser" placeholder="postgres" />
+                        </div>
+                        <div class="config-field">
+                            <label>Password</label>
+                            <input type="password" id="dbPassword" placeholder="••••••••" />
+                        </div>
+                        <div class="config-field full">
+                            <label>Database Name</label>
+                            <input type="text" id="dbName" placeholder="mydb" />
+                        </div>
+                    </div>
+                    <button class="test-btn" id="testDbBtn">
+                        🔌 Test Connection
+                    </button>
+                    <div class="test-result" id="dbTestResult" style="display: none;"></div>
+                </div>
+
+                <!-- OpenAI Configuration -->
+                <div class="modal-section">
+                    <div class="modal-section-title">
+                        <span>🤖</span>
+                        OpenAI API Key
+                        <span class="status-badge not-configured" id="aiStatusBadge">Not Configured</span>
+                    </div>
+                    <div class="config-field">
+                        <label>API Key</label>
+                        <input type="password" id="openaiKey" placeholder="sk-..." />
+                    </div>
+                    <button class="test-btn" id="testAiBtn">
+                        🔑 Test API Key
+                    </button>
+                    <div class="test-result" id="aiTestResult" style="display: none;"></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="cancelSettingsBtn">Cancel</button>
+                <button class="btn btn-primary" id="saveSettingsBtn">Save Settings</button>
             </div>
         </div>
     </div>
@@ -1606,19 +1909,29 @@
 
         async function checkHealth() {
             try {
-                const response = await fetch(`${API_BASE}/api/health`);
+                // Use config status endpoint to check actual configuration state
+                const response = await fetch(`${API_BASE}/api/config/status`);
                 const data = await response.json();
 
-                if (data.database === 'connected') {
+                // Check DB status
+                if (data.db_connected) {
+                    // Connected and working
                     dbHealthIcon.classList.add('connected');
                     dbHealthIcon.classList.remove('disconnected');
                     dbHealthText.textContent = 'DB Connected';
-                } else {
+                } else if (data.db_configured && data.db_source !== 'default') {
+                    // Configured but connection failed
                     dbHealthIcon.classList.add('disconnected');
                     dbHealthIcon.classList.remove('connected');
                     dbHealthText.textContent = 'DB Error';
+                } else {
+                    // Not configured - using defaults or no config
+                    dbHealthIcon.classList.add('disconnected');
+                    dbHealthIcon.classList.remove('connected');
+                    dbHealthText.textContent = 'DB Not Configured';
                 }
 
+                // Check OpenAI status
                 if (data.openai_configured) {
                     aiHealthIcon.classList.add('connected');
                     aiHealthIcon.classList.remove('disconnected');
@@ -1626,12 +1939,16 @@
                 } else {
                     aiHealthIcon.classList.add('disconnected');
                     aiHealthIcon.classList.remove('connected');
-                    aiHealthText.textContent = 'AI Disabled';
+                    aiHealthText.textContent = 'AI Not Configured';
                 }
             } catch (error) {
                 console.error('Health check error:', error);
                 dbHealthIcon.classList.add('disconnected');
+                dbHealthIcon.classList.remove('connected');
+                dbHealthText.textContent = 'DB Not Configured';
                 aiHealthIcon.classList.add('disconnected');
+                aiHealthIcon.classList.remove('connected');
+                aiHealthText.textContent = 'AI Not Configured';
             }
         }
 
@@ -1891,9 +2208,279 @@
             return div.innerHTML;
         }
 
+        // ==================== Settings Modal ====================
+        
+        const settingsBtn = document.getElementById('settingsBtn');
+        const settingsModal = document.getElementById('settingsModal');
+        const closeSettingsBtn = document.getElementById('closeSettingsBtn');
+        const cancelSettingsBtn = document.getElementById('cancelSettingsBtn');
+        const saveSettingsBtn = document.getElementById('saveSettingsBtn');
+        const testDbBtn = document.getElementById('testDbBtn');
+        const testAiBtn = document.getElementById('testAiBtn');
+        
+        // DB fields
+        const dbHost = document.getElementById('dbHost');
+        const dbPort = document.getElementById('dbPort');
+        const dbUser = document.getElementById('dbUser');
+        const dbPassword = document.getElementById('dbPassword');
+        const dbName = document.getElementById('dbName');
+        const dbTestResult = document.getElementById('dbTestResult');
+        const dbStatusBadge = document.getElementById('dbStatusBadge');
+        
+        // AI fields
+        const openaiKey = document.getElementById('openaiKey');
+        const aiTestResult = document.getElementById('aiTestResult');
+        const aiStatusBadge = document.getElementById('aiStatusBadge');
+
+        // Open settings modal
+        settingsBtn.addEventListener('click', () => {
+            loadSettingsFromStorage();
+            settingsModal.classList.add('visible');
+        });
+
+        // Close settings modal
+        function closeSettingsModal() {
+            settingsModal.classList.remove('visible');
+            dbTestResult.style.display = 'none';
+            aiTestResult.style.display = 'none';
+        }
+
+        closeSettingsBtn.addEventListener('click', closeSettingsModal);
+        cancelSettingsBtn.addEventListener('click', closeSettingsModal);
+        
+        // Close on overlay click
+        settingsModal.addEventListener('click', (e) => {
+            if (e.target === settingsModal) {
+                closeSettingsModal();
+            }
+        });
+
+        // Load settings from localStorage
+        function loadSettingsFromStorage() {
+            const dbConfig = JSON.parse(localStorage.getItem('dbConfig') || 'null');
+            const aiConfig = JSON.parse(localStorage.getItem('aiConfig') || 'null');
+            
+            if (dbConfig) {
+                dbHost.value = dbConfig.host || '';
+                dbPort.value = dbConfig.port || '';
+                dbUser.value = dbConfig.user || '';
+                dbPassword.value = dbConfig.password || '';
+                dbName.value = dbConfig.database || '';
+            } else {
+                // Set defaults
+                dbHost.value = 'localhost';
+                dbPort.value = '5432';
+                dbUser.value = '';
+                dbPassword.value = '';
+                dbName.value = '';
+            }
+            
+            if (aiConfig) {
+                openaiKey.value = aiConfig.api_key || '';
+            } else {
+                openaiKey.value = '';
+            }
+        }
+
+        // Test database connection
+        testDbBtn.addEventListener('click', async () => {
+            testDbBtn.disabled = true;
+            testDbBtn.textContent = '⏳ Testing...';
+            dbTestResult.style.display = 'none';
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/config/test-db`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        host: dbHost.value,
+                        port: parseInt(dbPort.value) || 5432,
+                        user: dbUser.value,
+                        password: dbPassword.value,
+                        database: dbName.value
+                    })
+                });
+                const data = await response.json();
+                
+                dbTestResult.style.display = 'block';
+                if (data.success) {
+                    dbTestResult.className = 'test-result success';
+                    dbTestResult.textContent = '✓ ' + data.message;
+                } else {
+                    dbTestResult.className = 'test-result error';
+                    dbTestResult.textContent = '✗ ' + data.message;
+                }
+            } catch (error) {
+                dbTestResult.style.display = 'block';
+                dbTestResult.className = 'test-result error';
+                dbTestResult.textContent = '✗ Connection failed: ' + error.message;
+            }
+            
+            testDbBtn.disabled = false;
+            testDbBtn.textContent = '🔌 Test Connection';
+        });
+
+        // Test OpenAI API key
+        testAiBtn.addEventListener('click', async () => {
+            testAiBtn.disabled = true;
+            testAiBtn.textContent = '⏳ Testing...';
+            aiTestResult.style.display = 'none';
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/config/test-openai`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        api_key: openaiKey.value
+                    })
+                });
+                const data = await response.json();
+                
+                aiTestResult.style.display = 'block';
+                if (data.success) {
+                    aiTestResult.className = 'test-result success';
+                    aiTestResult.textContent = '✓ ' + data.message;
+                } else {
+                    aiTestResult.className = 'test-result error';
+                    aiTestResult.textContent = '✗ ' + data.message;
+                }
+            } catch (error) {
+                aiTestResult.style.display = 'block';
+                aiTestResult.className = 'test-result error';
+                aiTestResult.textContent = '✗ Test failed: ' + error.message;
+            }
+            
+            testAiBtn.disabled = false;
+            testAiBtn.textContent = '🔑 Test API Key';
+        });
+
+        // Save settings
+        saveSettingsBtn.addEventListener('click', async () => {
+            saveSettingsBtn.disabled = true;
+            saveSettingsBtn.textContent = 'Saving...';
+            
+            try {
+                // Save DB config - always save current state
+                if (dbHost.value && dbUser.value && dbName.value) {
+                    const dbConfig = {
+                        host: dbHost.value,
+                        port: parseInt(dbPort.value) || 5432,
+                        user: dbUser.value,
+                        password: dbPassword.value,
+                        database: dbName.value
+                    };
+                    
+                    localStorage.setItem('dbConfig', JSON.stringify(dbConfig));
+                    
+                    await fetch(`${API_BASE}/api/config/set-db`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(dbConfig)
+                    });
+                } else {
+                    // Clear DB config if fields are empty
+                    localStorage.removeItem('dbConfig');
+                    await fetch(`${API_BASE}/api/config/clear-db`, {
+                        method: 'DELETE'
+                    });
+                }
+                
+                // Save OpenAI config - always save current state
+                if (openaiKey.value) {
+                    const aiConfig = { api_key: openaiKey.value };
+                    localStorage.setItem('aiConfig', JSON.stringify(aiConfig));
+                    
+                    await fetch(`${API_BASE}/api/config/set-openai`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(aiConfig)
+                    });
+                } else {
+                    // Clear OpenAI config if field is empty
+                    localStorage.removeItem('aiConfig');
+                    await fetch(`${API_BASE}/api/config/clear-openai`, {
+                        method: 'DELETE'
+                    });
+                }
+                
+                closeSettingsModal();
+                checkHealth();
+                checkConfigStatus();
+                setStatus('ready', 'Settings saved successfully');
+            } catch (error) {
+                console.error('Error saving settings:', error);
+                setStatus('ready', 'Error saving settings');
+            }
+            
+            saveSettingsBtn.disabled = false;
+            saveSettingsBtn.textContent = 'Save Settings';
+        });
+
+        // Check configuration status and update badges
+        async function checkConfigStatus() {
+            try {
+                const response = await fetch(`${API_BASE}/api/config/status`);
+                const data = await response.json();
+                
+                // Update DB badge
+                if (data.db_connected) {
+                    dbStatusBadge.className = 'status-badge connected';
+                    dbStatusBadge.textContent = 'Connected';
+                } else if (data.db_configured) {
+                    dbStatusBadge.className = 'status-badge disconnected';
+                    dbStatusBadge.textContent = 'Not Connected';
+                } else {
+                    dbStatusBadge.className = 'status-badge not-configured';
+                    dbStatusBadge.textContent = 'Not Configured';
+                }
+                
+                // Update AI badge
+                if (data.openai_configured) {
+                    aiStatusBadge.className = 'status-badge connected';
+                    aiStatusBadge.textContent = 'Configured';
+                } else {
+                    aiStatusBadge.className = 'status-badge not-configured';
+                    aiStatusBadge.textContent = 'Not Configured';
+                }
+            } catch (error) {
+                console.error('Error checking config status:', error);
+            }
+        }
+
+        // Send saved config to backend on startup
+        async function initializeConfig() {
+            const dbConfig = JSON.parse(localStorage.getItem('dbConfig') || 'null');
+            const aiConfig = JSON.parse(localStorage.getItem('aiConfig') || 'null');
+            
+            try {
+                if (dbConfig && dbConfig.host && dbConfig.user && dbConfig.database) {
+                    await fetch(`${API_BASE}/api/config/set-db`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(dbConfig)
+                    });
+                }
+                
+                if (aiConfig && aiConfig.api_key) {
+                    await fetch(`${API_BASE}/api/config/set-openai`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(aiConfig)
+                    });
+                }
+            } catch (error) {
+                console.error('Error initializing config:', error);
+            }
+        }
+
         // ==================== Initial Load ====================
-        document.addEventListener('DOMContentLoaded', () => {
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Initialize config from localStorage first
+            await initializeConfig();
+            
+            // Then check health and load data
             checkHealth();
+            checkConfigStatus();
             loadWatchFolder();
             loadSchemas();
             loadHistory();

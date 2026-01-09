@@ -13,7 +13,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 
-from backend.config import get_settings
+from backend.config import get_settings, get_runtime_config, DBConfigRequest, OpenAIConfigRequest, ConfigStatusResponse
 from backend.services.file_processor import FileProcessor
 from backend.services.db_manager import DatabaseManager
 from backend.services.llm_standardizer import LLMStandardizer
@@ -645,6 +645,153 @@ async def get_schema_summary(schema_name: str):
         raise HTTPException(status_code=500, detail=str(e))
     finally:
         db_manager.close()
+
+
+# ==================== Configuration Endpoints ====================
+
+@app.post("/api/config/test-db")
+async def test_db_connection(config: DBConfigRequest):
+    """
+    Test database connection with provided credentials.
+    Does not save the configuration.
+    """
+    import psycopg2
+    
+    try:
+        conn = psycopg2.connect(
+            host=config.host,
+            port=config.port,
+            user=config.user,
+            password=config.password,
+            database=config.database,
+            connect_timeout=5
+        )
+        conn.close()
+        return {"success": True, "message": "Connection successful"}
+    except psycopg2.OperationalError as e:
+        return {"success": False, "message": f"Connection failed: {str(e)}"}
+    except Exception as e:
+        return {"success": False, "message": f"Error: {str(e)}"}
+
+
+@app.post("/api/config/test-openai")
+async def test_openai_key(config: OpenAIConfigRequest):
+    """
+    Test OpenAI API key validity.
+    Does not save the configuration.
+    """
+    from openai import OpenAI
+    
+    if not config.api_key or not config.api_key.startswith("sk-"):
+        return {"success": False, "message": "Invalid API key format"}
+    
+    try:
+        client = OpenAI(api_key=config.api_key)
+        # Make a minimal API call to verify the key
+        client.models.list()
+        return {"success": True, "message": "API key is valid"}
+    except Exception as e:
+        error_msg = str(e)
+        if "authentication" in error_msg.lower() or "invalid" in error_msg.lower():
+            return {"success": False, "message": "Invalid API key"}
+        elif "quota" in error_msg.lower():
+            return {"success": True, "message": "API key valid (quota may be limited)"}
+        else:
+            return {"success": False, "message": f"Error: {error_msg[:100]}"}
+
+
+@app.post("/api/config/set-db")
+async def set_db_config(config: DBConfigRequest):
+    """
+    Set database configuration for the current session.
+    Configuration is stored in memory and must be re-sent on server restart.
+    """
+    runtime_config = get_runtime_config()
+    runtime_config.set_db_config(
+        host=config.host,
+        port=config.port,
+        user=config.user,
+        password=config.password,
+        database=config.database
+    )
+    logger.info(f"Database configuration updated: {config.host}:{config.port}/{config.database}")
+    return {"success": True, "message": "Database configuration saved"}
+
+
+@app.post("/api/config/set-openai")
+async def set_openai_config(config: OpenAIConfigRequest):
+    """
+    Set OpenAI API key for the current session.
+    Configuration is stored in memory and must be re-sent on server restart.
+    """
+    runtime_config = get_runtime_config()
+    runtime_config.set_openai_key(config.api_key)
+    logger.info("OpenAI API key updated")
+    return {"success": True, "message": "OpenAI API key saved"}
+
+
+@app.get("/api/config/status", response_model=ConfigStatusResponse)
+async def get_config_status():
+    """
+    Get current configuration status.
+    Returns whether DB and OpenAI are configured via UI (runtime) only.
+    .env values are treated as fallback, not as "configured".
+    """
+    settings = get_settings()
+    runtime_config = get_runtime_config()
+    
+    # Only consider "configured" if user explicitly set via UI
+    db_config = runtime_config.db_config
+    db_configured = db_config is not None
+    db_source = "runtime" if db_configured else "none"
+    
+    # Only test DB connection if user has configured credentials via UI
+    db_connected = False
+    if db_configured and db_config:
+        try:
+            import psycopg2
+            conn = psycopg2.connect(
+                host=db_config["host"],
+                port=db_config["port"],
+                user=db_config["user"],
+                password=db_config["password"],
+                database=db_config["database"],
+                connect_timeout=3
+            )
+            conn.close()
+            db_connected = True
+        except:
+            pass
+    
+    # Only consider OpenAI "configured" if user explicitly set via UI
+    openai_configured = runtime_config.openai_key is not None
+    openai_source = "runtime" if openai_configured else "none"
+    
+    return ConfigStatusResponse(
+        db_configured=db_configured,
+        db_connected=db_connected,
+        db_source=db_source,
+        openai_configured=openai_configured,
+        openai_source=openai_source
+    )
+
+
+@app.delete("/api/config/clear-db")
+async def clear_db_config():
+    """Clear runtime database configuration, reverting to .env or defaults."""
+    runtime_config = get_runtime_config()
+    runtime_config.clear_db_config()
+    logger.info("Runtime database configuration cleared")
+    return {"success": True, "message": "Database configuration cleared"}
+
+
+@app.delete("/api/config/clear-openai")
+async def clear_openai_config():
+    """Clear runtime OpenAI configuration, reverting to .env or defaults."""
+    runtime_config = get_runtime_config()
+    runtime_config.clear_openai_key()
+    logger.info("Runtime OpenAI configuration cleared")
+    return {"success": True, "message": "OpenAI configuration cleared"}
 
 
 # Error handlers

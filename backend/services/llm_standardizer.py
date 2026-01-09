@@ -7,7 +7,7 @@ from typing import Optional
 
 from openai import OpenAI
 
-from backend.config import get_settings
+from backend.config import get_settings, get_runtime_config
 from backend.services.db_manager import DatabaseManager
 from backend.models.schemas import ColumnMapping, StandardizationResult
 
@@ -28,11 +28,13 @@ class LLMStandardizer:
     def __init__(self):
         """Initialize the LLM standardizer."""
         self.settings = get_settings()
+        self.runtime_config = get_runtime_config()
         self.db_manager = DatabaseManager()
         
-        # Initialize OpenAI client if API key is available
-        if self.settings.openai_api_key:
-            self.client = OpenAI(api_key=self.settings.openai_api_key)
+        # Initialize OpenAI client - use runtime config if available
+        api_key = self.runtime_config.get_effective_openai_key(self.settings)
+        if api_key:
+            self.client = OpenAI(api_key=api_key)
         else:
             self.client = None
             logger.warning("OpenAI API key not configured. Column standardization will be disabled.")
