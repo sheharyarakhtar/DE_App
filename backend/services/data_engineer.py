@@ -8,7 +8,7 @@ from typing import Optional, Any
 
 from openai import OpenAI
 
-from backend.config import get_settings
+from backend.config import get_settings, get_runtime_config
 from backend.services.db_manager import DatabaseManager
 from backend.services.agent_tools import AgentToolExecutor, QUERY_TOOLS
 from backend.models.kpi_schemas import (
@@ -140,11 +140,14 @@ class DataEngineer:
     
     def __init__(self):
         self.settings = get_settings()
+        self.runtime_config = get_runtime_config()
         self.db_manager = DatabaseManager()
         self.tool_executor = AgentToolExecutor()
         
-        if self.settings.openai_api_key:
-            self.client = OpenAI(api_key=self.settings.openai_api_key)
+        # Use runtime config if available, otherwise fall back to settings
+        api_key = self.runtime_config.get_effective_openai_key(self.settings)
+        if api_key:
+            self.client = OpenAI(api_key=api_key)
         else:
             self.client = None
     

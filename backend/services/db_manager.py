@@ -9,7 +9,7 @@ import psycopg2
 from psycopg2 import sql
 from psycopg2.extras import execute_values, RealDictCursor
 
-from backend.config import get_settings
+from backend.config import get_settings, get_runtime_config
 
 logger = logging.getLogger(__name__)
 
@@ -24,17 +24,20 @@ class DatabaseManager:
     def __init__(self):
         """Initialize the database manager."""
         self.settings = get_settings()
+        self.runtime_config = get_runtime_config()
         self._connection = None
     
     def _get_connection(self):
         """Get or create a database connection."""
         if self._connection is None or self._connection.closed:
+            # Use runtime config if available, otherwise fall back to settings
+            db_config = self.runtime_config.get_effective_db_config(self.settings)
             self._connection = psycopg2.connect(
-                host=self.settings.postgres_host,
-                port=self.settings.postgres_port,
-                user=self.settings.postgres_user,
-                password=self.settings.postgres_password,
-                database=self.settings.postgres_db
+                host=db_config["host"],
+                port=db_config["port"],
+                user=db_config["user"],
+                password=db_config["password"],
+                database=db_config["database"]
             )
             # Set autocommit for read operations to avoid transaction issues
             self._connection.autocommit = True
